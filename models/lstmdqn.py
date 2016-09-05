@@ -126,7 +126,7 @@ class LSTMDQN(Model):
       start_time = time.time()
       start_iter = self.step.eval()
 
-      state_t, reward, is_finished = self.game.new_game()
+      state_t, reward, is_finished, _ = self.game.new_game()
 
       win_count = 0
       steps = xrange(start_iter, start_iter + self.max_iter)
