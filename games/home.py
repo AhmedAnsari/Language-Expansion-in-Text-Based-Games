@@ -22,7 +22,7 @@ class HomeGame(Game):
 
     self.actions = ["eat", "sleep", "watch", "exercise", "go"]
     self.objects = ["north", "south", "east", "west"]
-
+    self.goals = ["kitchen", "bedroom", "living", "garden"]
     self.quests = ["You are hungry", "You are sleepy", \
                    "You are bored", "You are getting fat"]
     self.quests_mislead = ["You are not hungry", "You are not sleepy", \
@@ -43,7 +43,6 @@ class HomeGame(Game):
     #   print "*" * 100
 
     with open(fname) as f:
-      data = []
       for line in f:
         words = line.split()
         if words:
@@ -62,6 +61,7 @@ class HomeGame(Game):
   def new_game(self):
     self.quest_checklist = []
     self.misliad_quest_checklist = []
+    self.goal_room = []
     self.step = 0
     self.random_teleport()
     self.random_quest()
@@ -83,8 +83,11 @@ class HomeGame(Game):
   def random_quest(self):
     idxs = np.random.permutation(len(self.quests))
 
+
+
     for idx in xrange(self.quest_levels):
       self.quest_checklist.append(idxs[idx])
+      self.goal_room.append(self.goals[idxs[idx]])
 
     self.mislead_quest_checklist = [idxs[-1]]
     for idx in xrange(len(self.quest_checklist) - 1):
@@ -117,6 +120,7 @@ class HomeGame(Game):
     if reward >= 1:
       self.quest_checklist = self.quest_checklist[1:]
       self.mislead_quest_checklist = self.mislead_quest_checklist[1:]
+      self.goal_room = self.goal_room[1:]
 
       if len(self.quest_checklist) == 0:
         is_finished = True
@@ -149,16 +153,31 @@ class HomeGame(Game):
     reward = None
     text_to_agent = [room_description, self.get_quest_text(self.quest_checklist[0])]
 
-    if "REWARD" in text:
-      # import ipdb; ipdb.set_trace() 
+    if self.goalComplete(text):
       reward = 1
-      for i in range(100):
-        print text
+      # for i in range(100):
+      #   print text
     elif 'not available' in text or 'not find' in text:
       reward = self.junk_cmd_reward
     if reward == None:
       reward = self.default_reward
     return text_to_agent, reward
+
+
+  def goalComplete(self, text):
+    self.client.send('look')
+    desc = self.client.get()
+    if ("REWARD" in text) and (self.goals[0] in desc):
+      print "Text: ",
+      print text
+      print "Desc: ",
+      print desc
+      print "Goal: ",
+      print self.goal_room[0]
+      print self.objects, self.actions      
+      return True
+    else:
+      return False
 
   def get_quest_text(self, quest_num):
     return self.quests_mislead[self.mislead_quest_checklist[0]] + " now but " + self.quests[quest_num] + " now."

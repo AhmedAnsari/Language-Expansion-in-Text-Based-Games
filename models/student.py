@@ -1,5 +1,4 @@
 import time
-from tqdm import tqdm
 import random
 import numpy as np
 import tensorflow as tf
@@ -7,7 +6,7 @@ from collections import deque
 
 from .base import Model
 
-class LSTMDQN(Model):
+class STUDENT_LSTMDQN(Model):
   """LSTM Deep Q Network
   """
   def __init__(self, game, rnn_size=100, batch_size=25,
@@ -60,26 +59,20 @@ class LSTMDQN(Model):
     word_embeds = tf.nn.embedding_lookup(embed, self.inputs)
 
     self.cell = tf.nn.rnn_cell.BasicLSTMCell(self.rnn_size)
-    #self.stacked_cell = tf.nn.rnn_cell.MultiRNNCell([self.cell] * self.layer_depth)
+    self.stacked_cell = tf.nn.rnn_cell.MultiRNNCell([self.cell] * self.layer_depth)
 
     outputs, _ = tf.nn.rnn(self.cell,
         [tf.reshape(embed_t, [self.batch_size, self.embed_dim]) for embed_t in tf.split(1, self.seq_length, word_embeds)],
                             dtype=tf.float32)
 
     output_embed = tf.transpose(tf.pack(outputs), [1, 0, 2])
-    print str(self.inputs.get_shape)+ '  Shaope of inputs'
-    print str(output_embed.get_shape())+ '  Shaope of output before mean pooling'
     mean_pool = tf.nn.relu(tf.reduce_mean(output_embed, 1))
-    print str(mean_pool.get_shape())+ '  Shaope of output after mean pooling'
-
-
 
     # Action scorer. no bias in paper
-    self.linear_output = tf.nn.relu(tf.nn.rnn_cell._linear(mean_pool, int(output_embed.get_shape()[2]), 0.0, scope="linear"))
-
-    self.pred_reward = tf.nn.rnn_cell._linear(self.linear_output, self.num_action, 0.0, scope="action")
-    self.pred_object = tf.nn.rnn_cell._linear(self.linear_output, self.num_object, 0.0, scope="object")
-
+    pred_reward = tf.nn.rnn_cell.linear(mean_pool, self.num_action, 0.0, scope="action")
+    pred_object = tf.nn.rnn_cell.linear(mean_pool, self.num_object, 0.0, scope="object")
+    #Getting the predicted probabilities of actions for student network
+    self.pred_reward_prob = tf.nn.softmax()
     self.true_reward = tf.placeholder(tf.float32, [self.batch_size, self.num_action])
     self.true_object = tf.placeholder(tf.float32, [self.batch_size, self.num_object])
 
@@ -115,8 +108,7 @@ class LSTMDQN(Model):
 
       _ = tf.scalar_summary("loss", self.loss)
 
-      self.memory = deque(self.memory_size)
-      self.priority_memory = deque(self.memory_size)
+      self.memory = deque()
 
       action = np.zeros(self.num_action)
       action[0] = 1
@@ -131,9 +123,8 @@ class LSTMDQN(Model):
       win_count = 0
       steps = xrange(start_iter, start_iter + self.max_iter)
       print(" [*] Start")
-      pbar =  tqdm(total = self.max_iter, desc = 'Training Progress: ')
+
       for step in steps:
-        pbar.update(1)
         pred_reward, pred_object = self.sess.run(
             [self.pred_reward, self.pred_object], feed_dict={self.inputs: [state_t]})
 
@@ -162,11 +153,9 @@ class LSTMDQN(Model):
         state_t1, reward_t, is_finished = self.game.do(action_idx, object_idx)
         self.memory.append((state_t, action_t, object_t, reward_t, state_t1, is_finished))
 
-
         # qLearnMinibatch : Q-learning updates
         if step > self.observe:
           batch = random.sample(self.memory, self.batch_size)
-
 
           s = [mem[0] for mem in batch]
           a = [mem[1] for mem in batch]
@@ -201,11 +190,3 @@ class LSTMDQN(Model):
           state_t, reward, is_finished = self.game.new_game()
 
         state_t = state_t1
-
-  def weight_variable(self, shape):
-    initial = tf.truncated_normal(shape, stddev = 0.02)
-    return tf.Variable(initial)
-
-  def bias_variable(self, shape):
-    initial = tf.constant(0.0, shape = shape)
-    return tf.Variable(initial)
