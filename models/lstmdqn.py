@@ -40,6 +40,9 @@ class LSTMDQN(Model):
     self.gamma = 0.99
     self.num_action_per_step = 1
     self.memory_size = memory_size
+    self.count = 0
+    self.len_mem = 0
+    self.len_prioritized_mem = 0
 
     self.game = game
     self.dataset = game.name
@@ -115,8 +118,8 @@ class LSTMDQN(Model):
 
       _ = tf.scalar_summary("loss", self.loss)
 
-      self.memory = deque(self.memory_size)
-      self.priority_memory = deque(self.memory_size)
+      self.memory = deque()
+      self.priority_memory = deque()
 
       action = np.zeros(self.num_action)
       action[0] = 1
@@ -163,12 +166,39 @@ class LSTMDQN(Model):
 
         state_t1, reward_t, is_finished, percentage = self.game.do(action_idx, object_idx)
         total_reward += reward_t
-        self.memory.append((state_t, action_t, object_t, reward_t, state_t1, is_finished))
 
+        #doing the pop operation
+        if self.len_mem + self.len_prioritized_mem >= memory_size:
+          pop1 = self.priority_memory[0][6]
+          pop2 = self.memory[0][6]
+
+          if pop1 < pop2:
+            self.priority_memory.popleft()
+            self.len_prioritized_mem -= 1
+          else:
+            self.memory.popleft()
+            self.len_mem -= 1
+
+        if reward_t > 0:
+          self.priority_memory.append((state_t, action_t, object_t, reward_t, state_t1, is_finished,self.count))
+          self.len_prioritized_mem += 1
+        else:
+          self.memory.append((state_t, action_t, object_t, reward_t, state_t1, is_finished,self.count))
+          self.len_mem += 1
+
+        self.count += 1
 
         # qLearnMinibatch : Q-learning updates
         if step > self.observe:
-          batch = random.sample(self.memory, self.batch_size)
+
+          n_sampled = 0
+          if self.len_prioritized_mem >= self.batch_size/4:
+            batch = random.sample(self.priority_memory,self.batch_size/4)
+            n_sampled = self.batch_size/4
+          else:
+            batch = random.sample(self.priority_memory,self.len_prioritized_mem)
+            n_sampled = int(self.len_prioritized_mem)
+          batch.extend(random.sample(self.memory, self.batch_size - n_sampled))
 
 
           s = [mem[0] for mem in batch]
