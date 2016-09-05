@@ -132,6 +132,8 @@ class LSTMDQN(Model):
       steps = xrange(start_iter, start_iter + self.max_iter)
       print(" [*] Start")
       pbar =  tqdm(total = self.max_iter, desc = 'Training Progress: ')
+      total_reward = 0
+      num_episodes = 0
       for step in steps:
         pbar.update(1)
         pred_reward, pred_object = self.sess.run(
@@ -160,6 +162,7 @@ class LSTMDQN(Model):
           self.epsilon -= (self.start_epsilon- self.final_epsilon) / self.observe
 
         state_t1, reward_t, is_finished = self.game.do(action_idx, object_idx)
+        total_reward += reward_t
         self.memory.append((state_t, action_t, object_t, reward_t, state_t1, is_finished))
 
 
@@ -198,7 +201,11 @@ class LSTMDQN(Model):
             print("Step: [%2d/%7d] time: %4.4f, loss: %.8f, win: %4d" % (step, self.max_iter, time.time() - start_time, loss, win_count))
 
         if is_finished:
+          num_episodes += 1
+          with open("reward.txt", "a") as fp:
+            print >> fp, (total_reward / (num_episodes * 1.0))
           state_t, reward, is_finished = self.game.new_game()
+          total_reward += reward
 
         state_t = state_t1
 
