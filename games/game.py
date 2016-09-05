@@ -30,3 +30,5 @@ class Game(object):
   def login(self, username, password):
     self.client.send("connect %s %s" % (username, password))
     self.client.get(3)
+    self.client.send("%s" % "@batchcommand text_sims.build")
+    self.client.get(3)

@@ -34,6 +34,14 @@ class HomeGame(Game):
     self.new_game()
 
   def make_vocab(self, fname):
+    # try:
+    #   f = open(fname)
+    #   check = f.read()
+    #   f.close()
+    #   print "I am in " * 100
+    # except:
+    #   print "*" * 100
+
     with open(fname) as f:
       data = []
       for line in f:
@@ -104,7 +112,7 @@ class HomeGame(Game):
       print(log)
       if reward > 0:
         time.sleep(2)
-
+    print reward, 
     # remove completed quest and refresh new quest
     if reward >= 1:
       self.quest_checklist = self.quest_checklist[1:]
@@ -129,7 +137,8 @@ class HomeGame(Game):
           vector[cnt] = self.word2idx[word]
           cnt += 1
         except:
-          print(" [!] %s not in vocab" % word)
+          pass
+          # print(" [!] %s not in vocab" % word)
 
     if reverse:
       return vector[::-1]
@@ -141,7 +150,10 @@ class HomeGame(Game):
     text_to_agent = [room_description, self.get_quest_text(self.quest_checklist[0])]
 
     if "REWARD" in text:
-      import ipdb; ipdb.set_trace() 
+      # import ipdb; ipdb.set_trace() 
+      reward = 1
+      for i in range(100):
+        print text
     elif 'not available' in text or 'not find' in text:
       reward = self.junk_cmd_reward
     if reward == None:

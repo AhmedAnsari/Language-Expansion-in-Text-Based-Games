@@ -1,4 +1,5 @@
 import time
+from tqdm import tqdm
 import random
 import numpy as np
 import tensorflow as tf
@@ -59,7 +60,7 @@ class LSTMDQN(Model):
     word_embeds = tf.nn.embedding_lookup(embed, self.inputs)
 
     self.cell = tf.nn.rnn_cell.BasicLSTMCell(self.rnn_size)
-    self.stacked_cell = tf.nn.rnn_cell.MultiRNNCell([self.cell] * self.layer_depth)
+    #self.stacked_cell = tf.nn.rnn_cell.MultiRNNCell([self.cell] * self.layer_depth)
 
     outputs, _ = tf.nn.rnn(self.cell,
         [tf.reshape(embed_t, [self.batch_size, self.embed_dim]) for embed_t in tf.split(1, self.seq_length, word_embeds)],
@@ -68,9 +69,13 @@ class LSTMDQN(Model):
     output_embed = tf.transpose(tf.pack(outputs), [1, 0, 2])
     mean_pool = tf.nn.relu(tf.reduce_mean(output_embed, 1))
 
+
+
     # Action scorer. no bias in paper
-    self.pred_reward = tf.nn.rnn_cell.linear(mean_pool, self.num_action, 0.0, scope="action")
-    self.pred_object = tf.nn.rnn_cell.linear(mean_pool, self.num_object, 0.0, scope="object")
+    self.linear_output = tf.nn.relu(tf.nn.rnn_cell._linear(mean_pool, int(output_embed.get_shape()[2]), 0.0, scope="linear"))
+
+    self.pred_reward = tf.nn.rnn_cell._linear(self.linear_output, self.num_action, 0.0, scope="action")
+    self.pred_object = tf.nn.rnn_cell._linear(self.linear_output, self.num_object, 0.0, scope="object")
 
     self.true_reward = tf.placeholder(tf.float32, [self.batch_size, self.num_action])
     self.true_object = tf.placeholder(tf.float32, [self.batch_size, self.num_object])
@@ -122,8 +127,9 @@ class LSTMDQN(Model):
       win_count = 0
       steps = xrange(start_iter, start_iter + self.max_iter)
       print(" [*] Start")
-
+      pbar =  tqdm(total = self.max_iter, desc = 'Training Progress: ')
       for step in steps:
+        pbar.update(1)
         pred_reward, pred_object = self.sess.run(
             [self.pred_reward, self.pred_object], feed_dict={self.inputs: [state_t]})
 
@@ -189,3 +195,11 @@ class LSTMDQN(Model):
           state_t, reward, is_finished = self.game.new_game()
 
         state_t = state_t1
+
+  def weight_variable(self, shape):
+    initial = tf.truncated_normal(shape, stddev = 0.02)
+    return tf.Variable(initial)
+
+  def bias_variable(self, shape):
+    initial = tf.constant(0.0, shape = shape)
+    return tf.Variable(initial)
