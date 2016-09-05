@@ -128,7 +128,10 @@ class HomeGame(Game):
         texts.append(self.get_quest_text(self.quest_checklist[0]))
 
     vector = self.vectorize(texts)
-    return vector, reward, is_finished
+    percentage = 0
+    if is_finished:
+      percentage = (1 - (len(self.quest_checklist)/(len(self.quests) * 1.0)))
+    return vector, reward, is_finished, percentage
 
   def vectorize(self, texts, reverse=True):
     null_idx = (len(self.word2idx) + 1)
