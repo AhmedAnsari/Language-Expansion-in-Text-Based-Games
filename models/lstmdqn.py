@@ -13,7 +13,7 @@ class LSTMDQN(Model):
   def __init__(self, game, rnn_size=100, batch_size=25,
                seq_length=30, embed_dim=100, layer_depth=3,
                start_epsilon=1, epsilon_end_time=1000000,
-               memory_size=1000000, 
+               memory_size=100000, 
                checkpoint_dir="checkpoint", forward_only=False):
     """Initialize the parameters for LSTM DQN
 
@@ -35,9 +35,9 @@ class LSTMDQN(Model):
 
     self.epsilon = self.start_epsilon = start_epsilon
     self.final_epsilon = 0.05
-    self.observe = 500
-    self.explore = 500
-    self.gamma = 0.99
+    self.observe = 1000#500
+    self.explore = 200000
+    self.gamma = 0.5
     self.num_action_per_step = 1
     self.memory_size = memory_size
     self.count = 0
@@ -70,32 +70,32 @@ class LSTMDQN(Model):
                             dtype=tf.float32)
 
     output_embed = tf.transpose(tf.pack(outputs), [1, 0, 2])
-    print str(self.inputs.get_shape)+ '  Shaope of inputs'
-    print str(output_embed.get_shape())+ '  Shaope of output before mean pooling'
+    # print str(self.inputs.get_shape)+ '  Shaope of inputs'
+    # print str(output_embed.get_shape())+ '  Shaope of output before mean pooling'
     mean_pool = tf.nn.relu(tf.reduce_mean(output_embed, 1))
-    print str(mean_pool.get_shape())+ '  Shaope of output after mean pooling'
+    # print str(mean_pool.get_shape())+ '  Shaope of output after mean pooling'
 
 
 
     # Action scorer. no bias in paper
     self.linear_output = tf.nn.relu(tf.nn.rnn_cell._linear(mean_pool, int(output_embed.get_shape()[2]), 0.0, scope="linear"))
 
-    self.pred_reward = tf.nn.rnn_cell._linear(self.linear_output, self.num_action, 0.0, scope="action")
-    self.pred_object = tf.nn.rnn_cell._linear(self.linear_output, self.num_object, 0.0, scope="object")
+    self.pred_action_value = tf.nn.rnn_cell._linear(self.linear_output, self.num_action, 0.0, scope="action")
+    self.pred_object_value = tf.nn.rnn_cell._linear(self.linear_output, self.num_object, 0.0, scope="object")
 
-    self.true_reward = tf.placeholder(tf.float32, [self.batch_size, self.num_action])
-    self.true_object = tf.placeholder(tf.float32, [self.batch_size, self.num_object])
+    self.true_action_value = tf.placeholder(tf.float32, [self.batch_size, self.num_action])
+    self.true_object_value = tf.placeholder(tf.float32, [self.batch_size, self.num_object])
 
     _ = tf.histogram_summary("mean_pool", mean_pool)
-    _ = tf.histogram_summary("pred_reward", self.pred_reward)
-    _ = tf.histogram_summary("true_reward", self.true_reward)
+    _ = tf.histogram_summary("pred_action_value", self.pred_action_value)
+    _ = tf.histogram_summary("true_action_value", self.true_action_value)
 
-    _ = tf.scalar_summary("pred_reward_mean", tf.reduce_mean(self.pred_reward))
-    _ = tf.scalar_summary("true_reward_mean", tf.reduce_mean(self.true_reward))
+    _ = tf.scalar_summary("pred_action_value_mean", tf.reduce_mean(self.pred_action_value))
+    _ = tf.scalar_summary("true_action_value_mean", tf.reduce_mean(self.true_action_value))
 
   def train(self, max_iter=1000000,
-            alpha=0.01, learning_rate=0.001,
-            start_epsilon=1.0, final_epsilon=0.05, memory_size=5000,
+            alpha=0.01, learning_rate=0.0005,
+            start_epsilon=1.0, final_epsilon=0.2, memory_size=5000,
             checkpoint_dir="checkpoint"):
     """Train an LSTM Deep Q Network.
 
@@ -113,7 +113,7 @@ class LSTMDQN(Model):
 
       self.step = tf.Variable(0, trainable=False)
 
-      self.loss = tf.reduce_sum(tf.square(self.true_reward - self.pred_reward))
+      self.loss = tf.reduce_sum(tf.square(self.true_action_value - self.pred_action_value))
       self.optim = tf.train.AdamOptimizer(self.learning_rate).minimize(self.loss)
 
       _ = tf.scalar_summary("loss", self.loss)
@@ -139,8 +139,8 @@ class LSTMDQN(Model):
       num_episodes = 0
       for step in steps:
         pbar.update(1)
-        pred_reward, pred_object = self.sess.run(
-            [self.pred_reward, self.pred_object], feed_dict={self.inputs: [state_t]})
+        pred_action_value, pred_object_value = self.sess.run(
+            [self.pred_action_value, self.pred_object_value], feed_dict={self.inputs: [state_t]})
 
         action_t = np.zeros([self.num_action])
         object_t = np.zeros([self.num_object])
@@ -150,11 +150,11 @@ class LSTMDQN(Model):
           action_idx = random.randrange(0, self.num_action - 1)
           object_idx = random.randrange(0, self.num_action - 1)
         else:
-          max_reward = np.max(pred_reward[0])
-          max_object = np.max(pred_object[0])
+          max_reward = np.max(pred_action_value[0])
+          max_object = np.max(pred_object_value[0])
 
-          action_idx = np.random.choice(np.where(pred_reward[0] == max_reward)[0])
-          object_idx = np.random.choice(np.where(pred_object[0] == max_object)[0])
+          action_idx = np.random.choice(np.where(pred_action_value[0] == max_reward)[0])
+          object_idx = np.random.choice(np.where(pred_object_value[0] == max_object)[0])
           #best_q = (max_action + max_object)/2
 
         # run and observe rewards
@@ -162,7 +162,7 @@ class LSTMDQN(Model):
         object_t[object_idx] = 1
 
         if self.epsilon > self.final_epsilon and step > self.observe:
-          self.epsilon -= (self.start_epsilon- self.final_epsilon) / self.observe
+          self.epsilon -= (self.start_epsilon- self.final_epsilon) / self.explore
 
         state_t1, reward_t, is_finished, percentage = self.game.do(action_idx, object_idx)
         total_reward += reward_t
@@ -211,18 +211,19 @@ class LSTMDQN(Model):
           if r > 0:
             win_count += 1
 
-          pred_reward = self.pred_reward.eval(feed_dict={self.inputs: s2})
+          pred_action_value = self.pred_action_value.eval(feed_dict={self.inputs: s2})
 
           action = np.zeros(self.num_action)
           object_= np.zeros(self.num_object)
 
-          _, loss, summary_str = self.sess.run([self.optim, self.loss, self.merged_sum], feed_dict={
-            self.inputs: s,
-            self.true_reward: a,
-            self.pred_reward: pred_reward,
-            self.true_object: o,
-            self.pred_object: pred_object,
-          })
+          if step % self.update_freq == 0:
+            _, loss, summary_str = self.sess.run([self.optim, self.loss, self.merged_sum], feed_dict={
+              self.inputs: s,
+              self.true_action_value: a,
+              self.pred_action_value: pred_action_value,
+              self.true_object_value: o,
+              self.pred_object_value: pred_object_value,
+            })
 
           if step % 10000 == 0:
             self.save(checkpoint_dir, step)
