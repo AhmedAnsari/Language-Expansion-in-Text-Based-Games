@@ -9,7 +9,7 @@ import numpy as np
 from copy import deepcopy
 class History:
   def __init__(self, config):
-    self.sequence_length = config.sequence_length
+    self.sequence_length = config.seq_length
     self.history = np.zeros(
         [self.sequence_length], dtype=np.int32)
 
