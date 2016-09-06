@@ -86,12 +86,38 @@ class LSTMDQN(Model):
     self.true_action_value = tf.placeholder(tf.float32, [self.batch_size, self.num_action])
     self.true_object_value = tf.placeholder(tf.float32, [self.batch_size, self.num_object])
 
+    self.trainable_variables = [v for v in tf.trainable_variables()]
+
     _ = tf.histogram_summary("mean_pool", mean_pool)
     _ = tf.histogram_summary("pred_action_value", self.pred_action_value)
     _ = tf.histogram_summary("true_action_value", self.true_action_value)
 
     _ = tf.scalar_summary("pred_action_value_mean", tf.reduce_mean(self.pred_action_value))
     _ = tf.scalar_summary("true_action_value_mean", tf.reduce_mean(self.true_action_value))
+
+
+  def predictNextStateValues(self, states, prev_iter_weights):
+    curr_iter_weights = []
+    count = 0
+    curr_iter_weights = self.sess.run(self.trainable_variables)
+    for var in self.trainable_variables:
+      self.sess.run(var.assign(prev_iter_weights[count]))
+      count += 1
+
+    action_values, object_values = self.sess.run([self.pred_action_value, self.pred_object_value], feed_dict={self.inputs: states})
+    count = 0
+    for var in self.trainable_variables:
+      self.sess.run(var.assign(curr_iter_weights[count]))
+      count += 1
+    return action_values, object_values
+
+
+    # for i in 
+
+    #     self.target_W_assign[name] = self.target_W[name].assign(self.target_W_input[name])
+            # self.target_W_assign[name].eval({self.target_W_input[name]: self.W[name].eval(session = self.session)}, session = self.session)
+
+    
 
   def train(self, max_iter=1000000,
             alpha=0.01, learning_rate=0.0005,
@@ -137,6 +163,7 @@ class LSTMDQN(Model):
       pbar =  tqdm(total = self.max_iter, desc = 'Training Progress: ')
       total_reward = 0
       num_episodes = 0
+      prev_iter_weights = self.sess.run(self.trainable_variables)
       for step in steps:
         pbar.update(1)
         pred_action_value, pred_object_value = self.sess.run(
@@ -150,11 +177,11 @@ class LSTMDQN(Model):
           action_idx = random.randrange(0, self.num_action - 1)
           object_idx = random.randrange(0, self.num_action - 1)
         else:
-          max_reward = np.max(pred_action_value[0])
-          max_object = np.max(pred_object_value[0])
+          max_action_value = np.max(pred_action_value[0])
+          max_object_value = np.max(pred_object_value[0])
 
-          action_idx = np.random.choice(np.where(pred_action_value[0] == max_reward)[0])
-          object_idx = np.random.choice(np.where(pred_object_value[0] == max_object)[0])
+          action_idx = np.random.choice(np.where(pred_action_value[0] == max_action_value)[0])
+          object_idx = np.random.choice(np.where(pred_object_value[0] == max_object_value)[0])
           #best_q = (max_action + max_object)/2
 
         # run and observe rewards
@@ -211,7 +238,17 @@ class LSTMDQN(Model):
           if r > 0:
             win_count += 1
 
-          pred_action_value = self.pred_action_value.eval(feed_dict={self.inputs: s2})
+
+          pred_action_value_next_state, pred_object_value_next_state = self.predictNextStateValues(s2, prev_iter_weights)
+          pred_action_value_next_state = np.sum(a * pred_action_value_next_state, 1)
+          pred_object_value_next_state = np.sum(o * pred_object_value_next_state, 1)
+
+          target_action_value = r + self.gamma * pred_action_value_next_state
+          target_object_value = r + self.gamma * pred_object_value_next_state
+
+          prev_iter_weights = self.sess.run(self.trainable_variables)
+
+          # pred_action_value = self.pred_action_value.eval(feed_dict={self.inputs: s2})
 
           action = np.zeros(self.num_action)
           object_= np.zeros(self.num_object)
@@ -219,9 +256,9 @@ class LSTMDQN(Model):
           if step % self.update_freq == 0:
             _, loss, summary_str = self.sess.run([self.optim, self.loss, self.merged_sum], feed_dict={
               self.inputs: s,
-              self.true_action_value: a,
+              self.true_action_value: target_action_value,
               self.pred_action_value: pred_action_value,
-              self.true_object_value: o,
+              self.true_object_value: target_object_value,
               self.pred_object_value: pred_object_value,
             })
 
