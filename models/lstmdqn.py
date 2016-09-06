@@ -139,7 +139,7 @@ class LSTMDQN(Model):
 
       self.step = tf.Variable(0, trainable=False)
 
-      self.loss = tf.reduce_sum(tf.square(self.true_action_value - self.pred_action_value))
+      self.loss = tf.reduce_sum(tf.square((self.true_action_value + self.true_object_value)/2 - (self.pred_action_value + self.pred_object_value)/2))
       self.optim = tf.train.AdamOptimizer(self.learning_rate).minimize(self.loss)
 
       _ = tf.scalar_summary("loss", self.loss)
