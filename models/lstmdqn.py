@@ -10,11 +10,11 @@ from .base import Model
 class LSTMDQN(Model):
   """LSTM Deep Q Network
   """
-  def __init__(self, game, rnn_size=100, batch_size=25,
+  def __init__(self, game, rnn_size=100, batch_size=64,
                seq_length=30, embed_dim=100, layer_depth=3,
                start_epsilon=1, epsilon_end_time=1000000,
                memory_size=100000, 
-               checkpoint_dir="checkpoint", forward_only=False):
+               checkpoint_dir="checkpoint", forward_only=False, max_episode_length=30, update_freq = 4):
     """Initialize the parameters for LSTM DQN
 
     Args:
@@ -24,7 +24,7 @@ class LSTMDQN(Model):
       embed_dim: the dimensionality of word embeddings
     """
     self.sess = tf.Session()
-
+    self.update_freq = update_freq
     self.rnn_size = rnn_size
     self.seq_length = seq_length
     self.batch_size = batch_size
@@ -43,6 +43,9 @@ class LSTMDQN(Model):
     self.count = 0
     self.len_mem = 0
     self.len_prioritized_mem = 0
+    
+    self.episode_length = 0
+    self.max_episode_length = 30
 
     self.game = game
     self.dataset = game.name
@@ -57,7 +60,7 @@ class LSTMDQN(Model):
 
   def build_model(self):
     # Representation Generator
-    self.inputs = tf.placeholder(tf.int32, [self.batch_size, self.seq_length])
+    self.inputs = tf.placeholder(tf.int32, [None, self.seq_length])
 
     embed = tf.get_variable("embed", [self.vocab_size, self.embed_dim])
     word_embeds = tf.nn.embedding_lookup(embed, self.inputs)
@@ -66,7 +69,7 @@ class LSTMDQN(Model):
     #self.stacked_cell = tf.nn.rnn_cell.MultiRNNCell([self.cell] * self.layer_depth)
 
     outputs, _ = tf.nn.rnn(self.cell,
-        [tf.reshape(embed_t, [self.batch_size, self.embed_dim]) for embed_t in tf.split(1, self.seq_length, word_embeds)],
+        [tf.reshape(embed_t, [-1, self.embed_dim]) for embed_t in tf.split(1, self.seq_length, word_embeds)],
                             dtype=tf.float32)
 
     output_embed = tf.transpose(tf.pack(outputs), [1, 0, 2])
@@ -83,8 +86,14 @@ class LSTMDQN(Model):
     self.pred_action_value = tf.nn.rnn_cell._linear(self.linear_output, self.num_action, 0.0, scope="action")
     self.pred_object_value = tf.nn.rnn_cell._linear(self.linear_output, self.num_object, 0.0, scope="object")
 
-    self.true_action_value = tf.placeholder(tf.float32, [self.batch_size, self.num_action])
-    self.true_object_value = tf.placeholder(tf.float32, [self.batch_size, self.num_object])
+    self.true_action_value = tf.placeholder(tf.float32, [self.batch_size])
+    self.true_object_value = tf.placeholder(tf.float32, [self.batch_size])
+
+
+    self.action_indicator = tf.placeholder(tf.float32, [self.batch_size, self.num_action])
+    self.object_indicator = tf.placeholder(tf.float32, [self.batch_size, self.num_object])
+    self.passed_action_value = tf.reduce_sum(tf.mul(self.action_indicator, self.pred_action_value), 1)
+    self.passed_object_value = tf.reduce_sum(tf.mul(self.object_indicator, self.pred_object_value), 1)
 
     self.trainable_variables = [v for v in tf.trainable_variables()]
 
@@ -136,11 +145,14 @@ class LSTMDQN(Model):
       self.alpha = alpha
       self.learning_rate = learning_rate
       self.checkpoint_dir = checkpoint_dir
+      
 
+
+      
       self.step = tf.Variable(0, trainable=False)
 
-      self.loss = tf.reduce_sum(tf.square((self.true_action_value + self.true_object_value)/2 - (self.pred_action_value + self.pred_object_value)/2))
-      self.optim = tf.train.AdamOptimizer(self.learning_rate).minimize(self.loss)
+      self.loss = tf.reduce_sum(tf.square((self.true_action_value + self.true_object_value)/2 - (self.passed_action_value + self.passed_object_value)/2))
+      self.optim = tf.train.RMSPropOptimizer(self.learning_rate).minimize(self.loss)
 
       _ = tf.scalar_summary("loss", self.loss)
 
@@ -156,6 +168,7 @@ class LSTMDQN(Model):
       start_iter = self.step.eval()
 
       state_t, reward, is_finished, _ = self.game.new_game()
+      self.episode_length = 0
 
       win_count = 0
       steps = xrange(start_iter, start_iter + self.max_iter)
@@ -175,7 +188,7 @@ class LSTMDQN(Model):
         # Epsilon greedy
         if random.random() <= self.epsilon or step <= self.observe:
           action_idx = random.randrange(0, self.num_action - 1)
-          object_idx = random.randrange(0, self.num_action - 1)
+          object_idx = random.randrange(0, self.num_object - 1)
         else:
           max_action_value = np.max(pred_action_value[0])
           max_object_value = np.max(pred_object_value[0])
@@ -192,6 +205,7 @@ class LSTMDQN(Model):
           self.epsilon -= (self.start_epsilon- self.final_epsilon) / self.explore
 
         state_t1, reward_t, is_finished, percentage = self.game.do(action_idx, object_idx)
+        self.episode_length += 1 #counting the number of steps in episode
         total_reward += reward_t
 
         #doing the pop operation
@@ -240,26 +254,26 @@ class LSTMDQN(Model):
 
 
           pred_action_value_next_state, pred_object_value_next_state = self.predictNextStateValues(s2, prev_iter_weights)
-          pred_action_value_next_state = np.sum(a * pred_action_value_next_state, 1)
-          pred_object_value_next_state = np.sum(o * pred_object_value_next_state, 1)
+          pred_action_value_next_state = np.max(pred_action_value_next_state, 1)
+          pred_object_value_next_state = np.max(pred_object_value_next_state, 1)
 
-          target_action_value = r + self.gamma * pred_action_value_next_state
-          target_object_value = r + self.gamma * pred_object_value_next_state
+          valid_states = np.invert(finished)
+          target_action_value = r + self.gamma * pred_action_value_next_state * valid_states
+          target_object_value = r + self.gamma * pred_object_value_next_state * valid_states
 
-          prev_iter_weights = self.sess.run(self.trainable_variables)
+          # pred_action_value, pred_object_value = self.sess.run([self.pred_action_value, self.pred_object_value], feed_dict={self.inputs: s})
 
-          # pred_action_value = self.pred_action_value.eval(feed_dict={self.inputs: s2})
-
-          action = np.zeros(self.num_action)
-          object_= np.zeros(self.num_object)
+          
+          
+          
 
           if step % self.update_freq == 0:
             _, loss, summary_str = self.sess.run([self.optim, self.loss, self.merged_sum], feed_dict={
               self.inputs: s,
               self.true_action_value: target_action_value,
-              self.pred_action_value: pred_action_value,
+              self.action_indicator: a,
               self.true_object_value: target_object_value,
-              self.pred_object_value: pred_object_value,
+              self.object_indicator: o
             })
 
           if step % 10000 == 0:
@@ -268,13 +282,15 @@ class LSTMDQN(Model):
           if step % 50 == 0:
             print("Step: [%2d/%7d] time: %4.4f, loss: %.8f, win: %4d" % (step, self.max_iter, time.time() - start_time, loss, win_count))
 
-        if is_finished:
+        if is_finished or self.episode_length % self.max_episode_length == 0:
+          prev_iter_weights = self.sess.run(self.trainable_variables)
           with open("quest.txt", "a") as fp:
             print >> fp, percentage
           num_episodes += 1
           with open("reward.txt", "a") as fp:
             print >> fp, (total_reward / (num_episodes * 1.0))
           state_t, reward, is_finished, percentage = self.game.new_game()
+          self.episode_length = 0 #resetting the number of steps in episode
           total_reward += reward
 
         state_t = state_t1

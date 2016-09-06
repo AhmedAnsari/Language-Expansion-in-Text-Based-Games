@@ -9,7 +9,7 @@ from .base import Model
 class STUDENT_LSTMDQN(Model):
   """LSTM Deep Q Network
   """
-  def __init__(self, game, rnn_size=100, batch_size=25,
+  def __init__(self, game, rnn_size=100, batch_size=100,
                seq_length=30, embed_dim=100, layer_depth=3,
                start_epsilon=1, epsilon_end_time=1000000,
                memory_size=1000000, 

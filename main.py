@@ -11,9 +11,11 @@ flags = tf.app.flags
 flags.DEFINE_integer("epoch", 25, "Epoch to train [25]")
 flags.DEFINE_integer("embed_dim", 100, "The dimension of word embedding matrix [100]")
 flags.DEFINE_integer("seq_length", 30, "The maximum length of word [30]")
-flags.DEFINE_integer("batch_size", 1, "The size of batch images [1]")
+flags.DEFINE_integer("batch_size", 64, "The size of batch images [64]")
 flags.DEFINE_integer("layer_depth", 1, "The size of batch images [1]")
 flags.DEFINE_integer("epsilon_end_time", 1000000, "# of time step to decay epsilon [1000000]")
+flags.DEFINE_integer("max_episode_length", 30, "The maximum length of an episode[30]")
+flags.DEFINE_integer("update_freq", 4, "Frequency of updates to network. [4]")
 flags.DEFINE_float("start_epsilon", 1.0, "The start value of epsilon [1.0]")
 flags.DEFINE_float("learning_rate", 0.0005, "Learning rate [1.0]")
 flags.DEFINE_float("decay", 0.5, "Decay of SGD [0.5]")
@@ -42,7 +44,8 @@ def main(_):
                     layer_depth=FLAGS.layer_depth,
                     batch_size=FLAGS.batch_size,
                     start_epsilon=FLAGS.start_epsilon,
-                    forward_only=FLAGS.forward_only)
+                    forward_only=FLAGS.forward_only,
+                    max_episode_length=FLAGS.max_episode_length)
 
     if not FLAGS.forward_only:
       model.train()
