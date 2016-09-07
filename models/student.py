@@ -1,192 +1,250 @@
 import time
+from tqdm import tqdm
 import random
 import numpy as np
 import tensorflow as tf
 from collections import deque
 
-from .base import Model
+# from .base import Model
 
-class STUDENT_LSTMDQN(Model):
-  """LSTM Deep Q Network
-  """
-  def __init__(self, game, rnn_size=100, batch_size=100,
-               seq_length=30, embed_dim=100, layer_depth=3,
-               start_epsilon=1, epsilon_end_time=1000000,
-               memory_size=1000000, 
-               checkpoint_dir="checkpoint", forward_only=False):
-    """Initialize the parameters for LSTM DQN
 
-    Args:
-      rnn_size: the dimensionality of hidden layers
-      layer_depth: # of depth in LSTM layers
-      batch_size: size of batch per epoch
-      embed_dim: the dimensionality of word embeddings
-    """
-    self.sess = tf.Session()
 
-    self.rnn_size = rnn_size
-    self.seq_length = seq_length
-    self.batch_size = batch_size
-    self.layer_depth = layer_depth
+import os
+from history import History
+from replay_memory import ReplayMemory
+import cPickle as pickle
 
-    self.embed_dim = embed_dim
-    self.vocab_size = 100
+class DQN:
+    def __init__(self, config):
 
-    self.epsilon = self.start_epsilon = start_epsilon
-    self.final_epsilon = 0.05
-    self.observe = 500
-    self.explore = 500
-    self.gamma = 0.99
-    self.num_action_per_step = 1
-    self.memory_size = memory_size
+        #init replay memory
+        self.session = tf.Session()
+        self.config = config
+        
+        self.memory = self.load_replay_memory(config)
+        self.history = History(config)
+        #init parameters
+        self.timeStep = 0
+        self.epsilon = config.INITIAL_EPSILON
+        self.actions = config.NUM_ACTIONS
 
-    self.game = game
-    self.dataset = game.name
+        self.stateInput = tf.placeholder(tf.int32, [None, self.config.seq_length])
 
-    self.num_action = len(self.game.actions)
-    self.num_object = len(self.game.objects)
 
-    self._attrs = ['epsilon', 'final_epsilon', 'oberve', \
-        'explore', 'gamma', 'memory_size', 'batch_size']
+        embed = tf.get_variable("embed", [self.config.vocab_size, self.config.embed_dim])
+        
 
-    self.build_model()
+        word_embeds = tf.nn.embedding_lookup(embed, self.stateInput) # @codewalk: What is this line doing ?
+        
 
-  def build_model(self):
-    # Representation Generator
-    self.inputs = tf.placeholder(tf.int32, [self.batch_size, self.seq_length])
+        self.initializer = tf.truncated_normal_initializer(stddev = 0.02)
 
-    embed = tf.get_variable("embed", [self.vocab_size, self.embed_dim])
-    word_embeds = tf.nn.embedding_lookup(embed, self.inputs)
+        self.cell = tf.nn.rnn_cell.LSTMCell(self.config.rnn_size, initializer = self.initializer)
+        
 
-    self.cell = tf.nn.rnn_cell.BasicLSTMCell(self.rnn_size)
-    self.stacked_cell = tf.nn.rnn_cell.MultiRNNCell([self.cell] * self.layer_depth)
+        initial_state = self.cell.zero_state(self.config.BATCH_SIZE, tf.float32)
+        
 
-    outputs, _ = tf.nn.rnn(self.cell,
-        [tf.reshape(embed_t, [self.batch_size, self.embed_dim]) for embed_t in tf.split(1, self.seq_length, word_embeds)],
-                            dtype=tf.float32)
+        # early_stop = tf.constant(self.config.seq_length, dtype = tf.int32)
 
-    output_embed = tf.transpose(tf.pack(outputs), [1, 0, 2])
-    mean_pool = tf.nn.relu(tf.reduce_mean(output_embed, 1))
+        outputs, _ = tf.nn.rnn(self.cell, [tf.reshape(embed_t, [-1, self.config.embed_dim]) for embed_t in tf.split(1, self.config.seq_length, word_embeds)], dtype=tf.float32, initial_state = initial_state, scope = "LSTMN")
+        
 
-    # Action scorer. no bias in paper
-    pred_reward = tf.nn.rnn_cell.linear(mean_pool, self.num_action, 0.0, scope="action")
-    pred_object = tf.nn.rnn_cell.linear(mean_pool, self.num_object, 0.0, scope="object")
-    #Getting the predicted probabilities of actions for student network
-    self.pred_reward_prob = tf.nn.softmax()
-    self.true_reward = tf.placeholder(tf.float32, [self.batch_size, self.num_action])
-    self.true_object = tf.placeholder(tf.float32, [self.batch_size, self.num_object])
+        output_embed = tf.transpose(tf.pack(outputs), [1, 0, 2])
+        
 
-    _ = tf.histogram_summary("mean_pool", mean_pool)
-    _ = tf.histogram_summary("pred_reward", self.pred_reward)
-    _ = tf.histogram_summary("true_reward", self.true_reward)
+        mean_pool = tf.nn.relu(tf.reduce_mean(output_embed, 1))
+        
 
-    _ = tf.scalar_summary("pred_reward_mean", tf.reduce_mean(self.pred_reward))
-    _ = tf.scalar_summary("true_reward_mean", tf.reduce_mean(self.true_reward))
+        linear_output = tf.nn.relu(tf.nn.rnn_cell._linear(mean_pool, int(output_embed.get_shape()[2]), 0.0, scope="linearN"))
+        
 
-  def train(self, max_iter=1000000,
-            alpha=0.01, learning_rate=0.001,
-            start_epsilon=1.0, final_epsilon=0.05, memory_size=5000,
-            checkpoint_dir="checkpoint"):
-    """Train an LSTM Deep Q Network.
 
-    Args:
-      max_iter: int, The size of total iterations [450000]
-      alpha: float, The importance of regularizer term [0.01]
-      learning_rate: float, The learning rate of SGD [0.001]
-      checkpoint_dir: str, The path for checkpoints to be saved [checkpoint]
-    """
-    with self.sess:
-      self.max_iter = max_iter
-      self.alpha = alpha
-      self.learning_rate = learning_rate
-      self.checkpoint_dir = checkpoint_dir
+        self.action_value = tf.nn.rnn_cell._linear(linear_output, self.config.num_actions, 0.0, scope="actionN")
+        
 
-      self.step = tf.Variable(0, trainable=False)
+        self.object_value = tf.nn.rnn_cell._linear(linear_output, self.config.num_objects, 0.0, scope="objectN")
+        
 
-      self.loss = tf.reduce_sum(tf.square(self.true_reward - self.pred_reward))
-      self.optim = tf.train.AdamOptimizer(self.learning_rate).minimize(self.loss)
+        self.target_action_value = tf.placeholder(tf.float32, [None])
+        self.target_object_value = tf.placeholder(tf.float32, [None])
 
-      _ = tf.scalar_summary("loss", self.loss)
+        self.target_action_prob = tf.nn.softmax(tf.truediv(self.target_action_value,self.temperature))
+        self.target_object_prob = tf.nn.softmax(tf.truediv(self.target_object_value,self.temperature))
 
-      self.memory = deque()
+        
 
-      action = np.zeros(self.num_action)
-      action[0] = 1
 
-      self.initialize(log_dir="./logs")
+        self.action_indicator = tf.placeholder(tf.float32, [None, self.config.num_actions])
+        self.object_indicator = tf.placeholder(tf.float32, [None, self.config.num_objects])
 
-      start_time = time.time()
-      start_iter = self.step.eval()
+        self.pred_action_value = tf.reduce_sum(tf.mul(self.action_indicator, self.action_value), 1)
+        self.pred_object_value = tf.reduce_sum(tf.mul(self.object_indicator, self.object_value), 1)
 
-      state_t, reward, is_finished = self.game.new_game()
+        self.pred_action_prob = tf.nn.softmax(self.pred_action_value)
+        self.pred_object_prob = tf.nn.softmax(self.pred_object_value)
 
-      win_count = 0
-      steps = xrange(start_iter, start_iter + self.max_iter)
-      print(" [*] Start")
+        
 
-      for step in steps:
-        pred_reward, pred_object = self.sess.run(
-            [self.pred_reward, self.pred_object], feed_dict={self.inputs: [state_t]})
 
-        action_t = np.zeros([self.num_action])
-        object_t = np.zeros([self.num_object])
 
-        # Epsilon greedy
-        if random.random() <= self.epsilon or step <= self.observe:
-          action_idx = random.randrange(0, self.num_action - 1)
-          object_idx = random.randrange(0, self.num_action - 1)
+        self.target_qpred = (self.target_action_value + self.target_object_value)/2
+        self.qpred = (self.pred_action_value + self.pred_object_value)/2
+
+        self.delta = self.target_qpred - self.qpred
+
+        if self.config.clipDelta:
+            self.delta = tf.clip_by_value(self.delta, self.config.minDelta, self.config.maxDelta, name='clipped_delta')
+
+        self.loss = tf.reduce_mean(tf.square(self.delta), name='loss')
+
+        self.W = ["LSTMN", "linearN", "actionN", "objectN"]
+        self.target_W = ["LSTMT", "linearT", "actionT", "objectT"]
+
+
+        # Clipping gradients
+
+        self.optim_ = tf.train.RMSPropOptimizer(learning_rate = self.config.LEARNING_RATE)
+        tvars = tf.trainable_variables()
+        def ClipIfNotNone(grad,var):
+            if grad is None:
+                return grad
+            return tf.clip_by_norm(grad,20)
+        grads = [ClipIfNotNone(i,var) for i,var in zip(tf.gradients(self.loss, tvars),tvars)]
+        self.optim = self.optim_.apply_gradients(zip(grads, tvars))
+
+
+        if not(self.config.LOAD_WEIGHTS and self.load_weights()):
+            self.session.run(tf.initialize_all_variables())
+            # self.copyTargetQNetworkOperation()
+        self.saver = tf.train.Saver()
+
+
+    def copyTargetQNetworkOperation(self):
+        for i in range(len(self.W)):
+            vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope = self.W[i])
+            varsT = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope = self.target_W[i])
+            # for i in vars:
+            #   print i.name
+            # print "Over ."
+            # for i in varsT:
+            #   print i.name
+            # print len(vars)
+            # print len(varsT)
+            copy_op = zip(varsT, vars)
+            self.session.run(map(lambda (x,y): x.assign(y.eval(session = self.session)),copy_op))
+            # value1 = self.session.run(vars)
+            # value2 = self.session.run(varsT)
+            # print len(value1)
+            # print len(value2)
+            # val_op = zip(value1, value2)
+            # for x, y in val_op:
+            #   res = x - y
+            #   print sum(res)
+
+
+
+    def train(self):
+
+        s_t, action, obj, reward, s_t_plus_1, terminal = self.memory.sample()
+        state_batch = s_t
+        action_batch = action
+        obj_batch = obj
+        reward_batch = reward
+        nextState_batch = s_t_plus_1
+
+        # Step 2: calculate y
+        target_action_batch = []
+        target_object_batch = []
+        QValue_action_batch = self.action_valueT.eval(feed_dict={self.stateInputT:nextState_batch},session = self.session)
+        QValue_object_batch = self.object_valueT.eval(feed_dict={self.stateInputT:nextState_batch},session = self.session)
+
+
+        for i in range(0,self.config.BATCH_SIZE):
+            if terminal[i]:
+                target_action_batch.append(reward_batch[i])
+                target_object_batch.append(reward_batch[i])
+            else:
+                target_action_batch.append(reward_batch[i] + self.config.GAMMA* np.max(QValue_action_batch[i]))
+                target_object_batch.append(reward_batch[i] + self.config.GAMMA* np.max(QValue_object_batch[i]))
+
+        self.optim.run(feed_dict={
+                self.target_action_value : target_action_batch,
+                self.target_object_value : target_object_batch,
+                self.action_indicator : action_batch,
+                self.object_indicator : obj_batch,
+                self.stateInput : state_batch
+                },session = self.session)
+
+        # save network every 10000 iteration
+        if self.timeStep % 10000 == 0:
+            if not os.path.exists(os.getcwd()+'/Savednetworks'):
+                os.makedirs(os.getcwd()+'/Savednetworks')
+            self.saver.save(self.session, os.getcwd()+'/Savednetworks/'+'network' + '-dqn', global_step = self.timeStep)
+
+        if self.timeStep % self.config.UPDATE_FREQUENCY == 0:
+            # print "Copying weights."
+            self.copyTargetQNetworkOperation()
+
+    def setPerception(self, state, reward, action_indicator, object_indicator, nextstate,terminal,evaluate = False): #nextObservation,action,reward,terminal):
+        self.history.add(nextstate)
+        if not evaluate:
+            self.memory.add(state, action_indicator, object_indicator, reward, nextstate, terminal)
+        if self.timeStep > self.config.REPLAY_START_SIZE and self.memory.count > self.config.REPLAY_START_SIZE:
+            # Train the network
+            if (not evaluate ) and (self.timeStep % self.config.trainfreq == 0):
+              # print "Started Training."
+                self.train()
+        if not evaluate:
+            self.timeStep += 1
+
+
+    def getAction(self, evaluate = False):
+        action_index = 0
+        object_index = 0
+        curr_epsilon = self.epsilon
+        if evaluate:
+            curr_epsilon = 0.05
+            
+        if random.random() <= curr_epsilon:
+            action_index = random.randrange(self.config.num_actions)
+            object_index = random.randrange(self.config.num_objects)
         else:
-          max_reward = np.max(pred_reward[0])
-          max_object = np.max(pred_object[0])
+            state_batch = np.zeros([self.config.batch_size, self.config.seq_length])
+            state_batch[0] = self.history.get()
+            QValue_action = self.action_value.eval(feed_dict={self.stateInput:state_batch},session = self.session)[0]
+            QValue_object = self.object_value.eval(feed_dict={self.stateInput:state_batch},session = self.session)[0]
+            action_index = np.argmax(QValue_action)
+            object_index = np.argmax(QValue_object)
 
-          action_idx = np.random.choice(np.where(pred_reward[0] == max_reward)[0])
-          object_idx = np.random.choice(np.where(pred_object[0] == max_object)[0])
-          #best_q = (max_action + max_object)/2
 
-        # run and observe rewards
-        action_t[action_idx] = 1
-        object_t[object_idx] = 1
+        if not evaluate:
+            if self.epsilon > self.config.FINAL_EPSILON and self.timeStep > self.config.REPLAY_START_SIZE:
+                self.epsilon -= (self.config.INITIAL_EPSILON - self.config.FINAL_EPSILON) / self.config.EXPLORE
 
-        if self.epsilon > self.final_epsilon and step > self.observe:
-          self.epsilon -= (self.start_epsilon- self.final_epsilon) / self.observe
+        return action_index, object_index
+    
+    def load_weights(self):
+        print 'inload weights'
+        if not os.path.exists(os.getcwd()+'/Savednetworks'):
+            return False    
+        
+        list_dir = sorted(os.listdir(os.getcwd()+'/Savednetworks'))
+        if not any(item.startswith('network-dqn') for item in list_dir):
+            return False
+        
+        print 'weights loaded'
+        self.saver.restore(self.session, os.getcwd()+'/Savednetworks/'+list_dir[-2])        
+        return True
 
-        state_t1, reward_t, is_finished = self.game.do(action_idx, object_idx)
-        self.memory.append((state_t, action_t, object_t, reward_t, state_t1, is_finished))
+    
+    def load_replay_memory(self,config):
+        if os.path.exists(config.model_dir+'/replay_file.save'):
+            fp = open(config.model_dir+'/replay_file.save','rb')
+            memory = pickle.load(fp)
+            fp.close()
+        else:
+            memory = ReplayMemory(config)
+        return memory
+          
 
-        # qLearnMinibatch : Q-learning updates
-        if step > self.observe:
-          batch = random.sample(self.memory, self.batch_size)
-
-          s = [mem[0] for mem in batch]
-          a = [mem[1] for mem in batch]
-          o = [mem[2] for mem in batch]
-          r = [mem[3] for mem in batch]
-          s2 = [mem[4] for mem in batch]
-          finished = [mem[5] for mem in batch]
-
-          if r > 0:
-            win_count += 1
-
-          pred_reward = self.pred_reward.eval(feed_dict={self.inputs: s2})
-
-          action = np.zeros(self.num_action)
-          object_= np.zeros(self.num_object)
-
-          _, loss, summary_str = self.sess.run([self.optim, self.loss, self.merged_sum], feed_dict={
-            self.inputs: s,
-            self.true_reward: a,
-            self.pred_reward: pred_reward,
-            self.true_object: o,
-            self.pred_object: pred_object,
-          })
-
-          if step % 10000 == 0:
-            self.save(checkpoint_dir, step)
-
-          if step % 50 == 0:
-            print("Step: [%2d/%7d] time: %4.4f, loss: %.8f, win: %4d" % (step, self.max_iter, time.time() - start_time, loss, win_count))
-
-        if is_finished:
-          state_t, reward, is_finished = self.game.new_game()
-
-        state_t = state_t1
