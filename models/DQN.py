@@ -48,7 +48,7 @@ class DQN:
 
         # early_stop = tf.constant(self.config.seq_length, dtype = tf.int32)
 
-        outputs, _ = tf.nn.rnn(self.cell, [tf.reshape(embed_t, [-1, self.config.embed_dim]) for embed_t in tf.split(1, self.config.seq_length, word_embeds)], dtype=tf.float32, initial_state = initial_state, scope = "LSTM")
+        outputs, _ = tf.nn.rnn(self.cell, [tf.reshape(embed_t, [-1, self.config.embed_dim]) for embed_t in tf.split(1, self.config.seq_length, word_embeds)], dtype=tf.float32, initial_state = initial_state, scope = "LSTMN")
         outputsT, _ = tf.nn.rnn(self.cellT, [tf.reshape(embed_tT, [-1, self.config.embed_dim]) for embed_tT in tf.split(1, self.config.seq_length, word_embedsT)], dtype=tf.float32, initial_state = initial_stateT, scope = "LSTMT")
 
         output_embed = tf.transpose(tf.pack(outputs), [1, 0, 2])
@@ -57,14 +57,14 @@ class DQN:
         mean_pool = tf.nn.relu(tf.reduce_mean(output_embed, 1))
         mean_poolT = tf.nn.relu(tf.reduce_mean(output_embedT, 1))
 
-        linear_output = tf.nn.relu(tf.nn.rnn_cell._linear(mean_pool, int(output_embed.get_shape()[2]), 0.0, scope="linear"))
+        linear_output = tf.nn.relu(tf.nn.rnn_cell._linear(mean_pool, int(output_embed.get_shape()[2]), 0.0, scope="linearN"))
         linear_outputT = tf.nn.relu(tf.nn.rnn_cell._linear(mean_poolT, int(output_embedT.get_shape()[2]), 0.0, scope="linearT"))
 
 
-        self.action_value = tf.nn.rnn_cell._linear(linear_output, self.config.num_actions, 0.0, scope="action")
+        self.action_value = tf.nn.rnn_cell._linear(linear_output, self.config.num_actions, 0.0, scope="actionN")
         self.action_valueT = tf.nn.rnn_cell._linear(linear_outputT, self.config.num_actions, 0.0, scope="actionT")
 
-        self.object_value = tf.nn.rnn_cell._linear(linear_output, self.config.num_objects, 0.0, scope="object")
+        self.object_value = tf.nn.rnn_cell._linear(linear_output, self.config.num_objects, 0.0, scope="objectN")
         self.object_valueT = tf.nn.rnn_cell._linear(linear_outputT, self.config.num_objects, 0.0, scope="objectT")
 
         self.target_action_value = tf.placeholder(tf.float32, [None])
@@ -86,7 +86,7 @@ class DQN:
 
         self.loss = tf.reduce_mean(tf.square(self.delta), name='loss')
 
-        self.W = ["LSTM", "linear", "action", "object"]
+        self.W = ["LSTMN", "linearN", "actionN", "objectN"]
         self.target_W = ["LSTMT", "linearT", "actionT", "objectT"]
 
 
@@ -111,8 +111,24 @@ class DQN:
         for i in range(len(self.W)):
             vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope = self.W[i])
             varsT = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope = self.target_W[i])
-            copy_op = zip(vars, varsT)
+            # for i in vars:
+            # 	print i.name
+            # print "Over ."
+            # for i in varsT:
+            # 	print i.name
+            # print len(vars)
+            # print len(varsT)
+            copy_op = zip(varsT, vars)
             self.session.run(map(lambda (x,y): x.assign(y.eval(session = self.session)),copy_op))
+            # value1 = self.session.run(vars)
+            # value2 = self.session.run(varsT)
+            # print len(value1)
+            # print len(value2)
+            # val_op = zip(value1, value2)
+            # for x, y in val_op:
+            # 	res = x - y
+            # 	print sum(res)
+
 
 
     def train(self):
@@ -154,6 +170,7 @@ class DQN:
             self.saver.save(self.session, os.getcwd()+'/Savednetworks/'+'network' + '-dqn', global_step = self.timeStep)
 
         if self.timeStep % self.config.UPDATE_FREQUENCY == 0:
+            # print "Copying weights."
             self.copyTargetQNetworkOperation()
 
     def setPerception(self, state, reward, action_indicator, object_indicator, nextstate,terminal,evaluate = False): #nextObservation,action,reward,terminal):
@@ -163,6 +180,7 @@ class DQN:
         if self.timeStep > self.config.REPLAY_START_SIZE and self.memory.count > self.config.REPLAY_START_SIZE:
             # Train the network
             if (not evaluate ) and (self.timeStep % self.config.trainfreq == 0):
+            	# print "Started Training."
                 self.train()
         if not evaluate:
             self.timeStep += 1
@@ -179,10 +197,10 @@ class DQN:
             action_index = random.randrange(self.config.num_actions)
             object_index = random.randrange(self.config.num_objects)
         else:
-            self.config.BATCH_SIZE = 1
-            QValue_action = self.action_value.eval(feed_dict={self.stateInput:[self.history.get()]},session = self.session)[0]
-            Qvalue_object = self.object_value.eval(feed_dict={self.stateInput:[self.history.get()]},session = self.session)[0]
-            self.config.BATCH_SIZE = int(self.config.batch_size)
+            state_batch = np.zeros([self.config.batch_size, self.config.seq_length])
+            state_batch[0] = self.history.get()
+            QValue_action = self.action_value.eval(feed_dict={self.stateInput:state_batch},session = self.session)[0]
+            QValue_object = self.object_value.eval(feed_dict={self.stateInput:state_batch},session = self.session)[0]
             action_index = np.argmax(QValue_action)
             object_index = np.argmax(QValue_object)
 

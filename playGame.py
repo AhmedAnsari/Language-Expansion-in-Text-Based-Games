@@ -43,12 +43,13 @@ def playgame(config,game):
         object_indicator[object_index] = 1
         #act
         nextstate,reward,terminal,percentage = game.do(action_index,object_index)
+        total_reward += reward
         episode_length += 1
         #observe
         brain.setPerception(state, reward, action_indicator, object_indicator, nextstate, terminal, False)
         nextstate = state
 #####################################################################
-        if terminal or episode_length % config.max_episode_length == 0:
+        if ((terminal) or ((episode_length % config.max_episode_length) == 0)):
             with open("quest.txt", "a") as fp:
                 print >> fp, percentage
             num_episodes += 1
@@ -57,8 +58,9 @@ def playgame(config,game):
             game.START_NEW_GAME = True
 
 
-        if (brain.timeStep%1000)==0:
-            pbar.update(1000)
+        # if (brain.timeStep%1000)==0:
+            # pbar.update(1000)
+        pbar.update(1)
             
 #        if (brain.timeStep%100000)==0:
 #            brain.memory.save_memory()
