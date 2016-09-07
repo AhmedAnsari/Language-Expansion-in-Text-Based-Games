@@ -59,48 +59,33 @@ class DQN:
         linear_output = tf.nn.relu(tf.nn.rnn_cell._linear(mean_pool, int(output_embed.get_shape()[2]), 0.0, scope="linearN"))
         
 
-
+        #we calculate the Q values. For the Student Network
         self.action_value = tf.nn.rnn_cell._linear(linear_output, self.config.num_actions, 0.0, scope="actionN")
-        
-
         self.object_value = tf.nn.rnn_cell._linear(linear_output, self.config.num_objects, 0.0, scope="objectN")
         
 
-        self.target_action_value = tf.placeholder(tf.float32, [None])
-        self.target_object_value = tf.placeholder(tf.float32, [None])
-
+        #here we will input the teachers q value
+        self.target_action_value = tf.placeholder(tf.float32, [None,self.config.seq_length])
+        self.target_object_value = tf.placeholder(tf.float32, [None,self.config.seq_length])
+        #here we calculate the probabilities for the teacher network
         self.target_action_prob = tf.nn.softmax(tf.truediv(self.target_action_value,self.temperature))
         self.target_object_prob = tf.nn.softmax(tf.truediv(self.target_object_value,self.temperature))
 
-        
+        #here we calculate the probabilities for the student network
+        self.pred_action_prob = tf.nn.softmax(self.action_value)
+        self.pred_object_prob = tf.nn.softmax(self.object_value)
 
 
-        self.action_indicator = tf.placeholder(tf.float32, [None, self.config.num_actions])
-        self.object_indicator = tf.placeholder(tf.float32, [None, self.config.num_objects])
+        cross_entropy_action = -tf.reduce_sum(self.target_action_prob*tf.log(self.pred_action_prob))
+        entropy_action = -tf.reduce_sum(self.target_action_prob*tf.log(self.target_action_prob))
 
-        self.pred_action_value = tf.reduce_sum(tf.mul(self.action_indicator, self.action_value), 1)
-        self.pred_object_value = tf.reduce_sum(tf.mul(self.object_indicator, self.object_value), 1)
+        cross_entropy_object = -tf.reduce_sum(self.target_object_prob*tf.log(self.pred_object_prob))
+        entropy_object = -tf.reduce_sum(self.object_action_prob*tf.log(self.target_object_prob))
 
-        self.pred_action_prob = tf.nn.softmax(self.pred_action_value)
-        self.pred_object_prob = tf.nn.softmax(self.pred_object_value)
-
-        
-
-
-
-        self.target_qpred = (self.target_action_value + self.target_object_value)/2
-        self.qpred = (self.pred_action_value + self.pred_object_value)/2
-
-        self.delta = self.target_qpred - self.qpred
+        self.kl_divergence = 0.5 * (cross_entropy_action - entropy_action + cross_entropy_object - entropy_object)
 
         if self.config.clipDelta:
-            self.delta = tf.clip_by_value(self.delta, self.config.minDelta, self.config.maxDelta, name='clipped_delta')
-
-        self.loss = tf.reduce_mean(tf.square(self.delta), name='loss')
-
-        self.W = ["LSTMN", "linearN", "actionN", "objectN"]
-        self.target_W = ["LSTMT", "linearT", "actionT", "objectT"]
-
+            self.loss = tf.clip_by_norm(self.kl_divergence, 100, name='loss') #@codewalk: discuss this
 
         # Clipping gradients
 
@@ -116,63 +101,18 @@ class DQN:
 
         if not(self.config.LOAD_WEIGHTS and self.load_weights()):
             self.session.run(tf.initialize_all_variables())
-            # self.copyTargetQNetworkOperation()
         self.saver = tf.train.Saver()
-
-
-    def copyTargetQNetworkOperation(self):
-        for i in range(len(self.W)):
-            vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope = self.W[i])
-            varsT = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope = self.target_W[i])
-            # for i in vars:
-            #   print i.name
-            # print "Over ."
-            # for i in varsT:
-            #   print i.name
-            # print len(vars)
-            # print len(varsT)
-            copy_op = zip(varsT, vars)
-            self.session.run(map(lambda (x,y): x.assign(y.eval(session = self.session)),copy_op))
-            # value1 = self.session.run(vars)
-            # value2 = self.session.run(varsT)
-            # print len(value1)
-            # print len(value2)
-            # val_op = zip(value1, value2)
-            # for x, y in val_op:
-            #   res = x - y
-            #   print sum(res)
-
-
 
     def train(self):
 
-        s_t, action, obj, reward, s_t_plus_1, terminal = self.memory.sample()
+        s_t, Q_action, Q_object = self.memory.sample()
         state_batch = s_t
-        action_batch = action
-        obj_batch = obj
-        reward_batch = reward
-        nextState_batch = s_t_plus_1
-
-        # Step 2: calculate y
-        target_action_batch = []
-        target_object_batch = []
-        QValue_action_batch = self.action_valueT.eval(feed_dict={self.stateInputT:nextState_batch},session = self.session)
-        QValue_object_batch = self.object_valueT.eval(feed_dict={self.stateInputT:nextState_batch},session = self.session)
-
-
-        for i in range(0,self.config.BATCH_SIZE):
-            if terminal[i]:
-                target_action_batch.append(reward_batch[i])
-                target_object_batch.append(reward_batch[i])
-            else:
-                target_action_batch.append(reward_batch[i] + self.config.GAMMA* np.max(QValue_action_batch[i]))
-                target_object_batch.append(reward_batch[i] + self.config.GAMMA* np.max(QValue_object_batch[i]))
+        target_action_batch = Q_action
+        target_object_batch = Q_object
 
         self.optim.run(feed_dict={
                 self.target_action_value : target_action_batch,
                 self.target_object_value : target_object_batch,
-                self.action_indicator : action_batch,
-                self.object_indicator : obj_batch,
                 self.stateInput : state_batch
                 },session = self.session)
 
@@ -182,47 +122,6 @@ class DQN:
                 os.makedirs(os.getcwd()+'/Savednetworks')
             self.saver.save(self.session, os.getcwd()+'/Savednetworks/'+'network' + '-dqn', global_step = self.timeStep)
 
-        if self.timeStep % self.config.UPDATE_FREQUENCY == 0:
-            # print "Copying weights."
-            self.copyTargetQNetworkOperation()
-
-    def setPerception(self, state, reward, action_indicator, object_indicator, nextstate,terminal,evaluate = False): #nextObservation,action,reward,terminal):
-        self.history.add(nextstate)
-        if not evaluate:
-            self.memory.add(state, action_indicator, object_indicator, reward, nextstate, terminal)
-        if self.timeStep > self.config.REPLAY_START_SIZE and self.memory.count > self.config.REPLAY_START_SIZE:
-            # Train the network
-            if (not evaluate ) and (self.timeStep % self.config.trainfreq == 0):
-              # print "Started Training."
-                self.train()
-        if not evaluate:
-            self.timeStep += 1
-
-
-    def getAction(self, evaluate = False):
-        action_index = 0
-        object_index = 0
-        curr_epsilon = self.epsilon
-        if evaluate:
-            curr_epsilon = 0.05
-            
-        if random.random() <= curr_epsilon:
-            action_index = random.randrange(self.config.num_actions)
-            object_index = random.randrange(self.config.num_objects)
-        else:
-            state_batch = np.zeros([self.config.batch_size, self.config.seq_length])
-            state_batch[0] = self.history.get()
-            QValue_action = self.action_value.eval(feed_dict={self.stateInput:state_batch},session = self.session)[0]
-            QValue_object = self.object_value.eval(feed_dict={self.stateInput:state_batch},session = self.session)[0]
-            action_index = np.argmax(QValue_action)
-            object_index = np.argmax(QValue_object)
-
-
-        if not evaluate:
-            if self.epsilon > self.config.FINAL_EPSILON and self.timeStep > self.config.REPLAY_START_SIZE:
-                self.epsilon -= (self.config.INITIAL_EPSILON - self.config.FINAL_EPSILON) / self.config.EXPLORE
-
-        return action_index, object_index
     
     def load_weights(self):
         print 'inload weights'
