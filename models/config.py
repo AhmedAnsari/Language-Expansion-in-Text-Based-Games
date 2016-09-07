@@ -11,7 +11,7 @@ class Config:
 
         #dqn
         self.vocab_size = 100
-        self.embed_dim = 30
+        self.embed_dim = 100
         self.rnn_size = 100
         self.clipDelta = True
         self.minDelta = -1.0
@@ -21,7 +21,7 @@ class Config:
         # self.SQUARED_GRADIENT_MOMENTUM = 0.95
         self.UPDATE_FREQUENCY = 1000 # Number of parameter updates after which the target parameters are updated
         self.LOAD_WEIGHTS = False
-        self.REPLAY_START_SIZE = 50000 #minimum number of previous transitions to be stored before training starts
+        self.REPLAY_START_SIZE = 1000 #minimum number of previous transitions to be stored before training starts
         self.INITIAL_EPSILON = 1 # starting value of epsilon
         self.FINAL_EPSILON = 0.2 # final value of epsilon
         self.trainfreq = 4

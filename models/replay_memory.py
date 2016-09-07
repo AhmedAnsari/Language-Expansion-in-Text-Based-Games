@@ -23,7 +23,7 @@ class ReplayMemory:
 
   def add(self, state, reward, nextstate, action, obj, terminal):
 
-    if self.len_mem + self.len_prioritized_mem >= memory_size:
+    if self.len_mem + self.len_prioritized_mem >= self.memory_size:
       pop1 = self.priority_memory[0][6]
       pop2 = self.memory[0][6]
 

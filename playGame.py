@@ -4,10 +4,10 @@
 # -------------------------
 
 import os
-from DQN import DQN
+from models.DQN import DQN
 import numpy as np
 import cPickle as cpickle
-from config import Config
+from models.config import Config
 from tqdm import tqdm
 import random
 from games import HomeGame, FantasyGame
@@ -27,15 +27,17 @@ def playgame(config,game):
     #adding progress bar for training
     pbar = tqdm(total = config.MAX_FRAMES, desc='Training Progress')
     episode_length = 0
+    num_episodes = 0
+    total_reward = 0
     while True:
         if game.START_NEW_GAME:
             episode_length = 0
             game.START_NEW_GAME = False
             state, reward, terminal, _ = game.new_game()
-            brain.history.add(state)            
+            brain.history.add(state)
         action_indicator = np.zeros(actions)
         object_indicator = np.zeros(objects)
-        #predict            
+        #predict
         action_index,object_index = brain.getAction()
         action_indicator[action_index] = 1
         object_indicator[object_index] = 1
@@ -43,8 +45,8 @@ def playgame(config,game):
         nextstate,reward,terminal,percentage = game.do(action_index,object_index)
         episode_length += 1
         #observe
-        brain.setPerception(state, reward, action_indicator, object_indicator, terminal, False)
-
+        brain.setPerception(state, reward, action_indicator, object_indicator, nextstate, terminal, False)
+        nextstate = state
 #####################################################################
         if terminal or episode_length % config.max_episode_length == 0:
             with open("quest.txt", "a") as fp:

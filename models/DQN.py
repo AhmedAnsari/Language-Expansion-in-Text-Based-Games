@@ -5,7 +5,7 @@ import numpy as np
 import tensorflow as tf
 from collections import deque
 
-from .base import Model
+# from .base import Model
 
 
 
@@ -18,6 +18,7 @@ class DQN:
     def __init__(self, config):
 
         #init replay memory
+        self.session = tf.Session()
         self.config = config
         
         self.memory = self.load_replay_memory(config)
@@ -32,23 +33,23 @@ class DQN:
 
 
         embed = tf.get_variable("embed", [self.config.vocab_size, self.config.embed_dim])
-        embedT = tf.get_variable("embed", [self.config.vocab_size, self.config.embed_dim])
+        embedT = tf.get_variable("embedT", [self.config.vocab_size, self.config.embed_dim])
 
         word_embeds = tf.nn.embedding_lookup(embed, self.stateInput) # @codewalk: What is this line doing ?
         word_embedsT = tf.nn.embedding_lookup(embedT, self.stateInputT) # @codewalk: What is this line doing ?
 
-        self.initializer = tf.truncated_normal(shape, stddev = 0.02)
+        self.initializer = tf.truncated_normal_initializer(stddev = 0.02)
 
         self.cell = tf.nn.rnn_cell.LSTMCell(self.config.rnn_size, initializer = self.initializer)
         self.cellT = tf.nn.rnn_cell.LSTMCell(self.config.rnn_size, initializer = self.initializer)
 
-        initial_state = self.cell.zero_state(None, tf.float32)
-        initial_stateT = self.cellT.zero_state(None, tf.float32)
+        initial_state = self.cell.zero_state(self.config.BATCH_SIZE, tf.float32)
+        initial_stateT = self.cellT.zero_state(self.config.BATCH_SIZE, tf.float32)
 
-        early_stop = tf.constant(self.config.seq_length, dtype = tf.int32)
+        # early_stop = tf.constant(self.config.seq_length, dtype = tf.int32)
 
-        outputs, _ = tf.nn.rnn(self.cell, [tf.reshape(embed_t, [-1, self.config.embed_dim]) for embed_t in tf.split(1, self.config.seq_length, word_embeds)], dtype=tf.float32, initial_state = initial_state, sequence_length = early_stop, scope = "LSTM")
-        outputsT, _ = tf.nn.rnn(self.cellT, [tf.reshape(embed_tT, [-1, self.config.embed_dim]) for embed_tT in tf.split(1, self.config.seq_length, word_embedsT)], dtype=tf.float32, initial_state = initial_stateT, sequence_length = early_stop, scope = "LSTMT")
+        outputs, _ = tf.nn.rnn(self.cell, [tf.reshape(embed_t, [-1, self.config.embed_dim]) for embed_t in tf.split(1, self.config.seq_length, word_embeds)], dtype=tf.float32, initial_state = initial_state, scope = "LSTM")
+        outputsT, _ = tf.nn.rnn(self.cellT, [tf.reshape(embed_tT, [-1, self.config.embed_dim]) for embed_tT in tf.split(1, self.config.seq_length, word_embedsT)], dtype=tf.float32, initial_state = initial_stateT, scope = "LSTMT")
 
         output_embed = tf.transpose(tf.pack(outputs), [1, 0, 2])
         output_embedT = tf.transpose(tf.pack(outputsT), [1, 0, 2])
@@ -60,17 +61,17 @@ class DQN:
         linear_outputT = tf.nn.relu(tf.nn.rnn_cell._linear(mean_poolT, int(output_embedT.get_shape()[2]), 0.0, scope="linearT"))
 
 
-        self.action_value = tf.nn.rnn_cell._linear(linear_output, self.config.num_action, 0.0, scope="action")
-        self.action_valueT = tf.nn.rnn_cell._linear(linear_outputT, self.config.num_action, 0.0, scope="actionT")
+        self.action_value = tf.nn.rnn_cell._linear(linear_output, self.config.num_actions, 0.0, scope="action")
+        self.action_valueT = tf.nn.rnn_cell._linear(linear_outputT, self.config.num_actions, 0.0, scope="actionT")
 
-        self.object_value = tf.nn.rnn_cell._linear(linear_output, self.config.num_object, 0.0, scope="object")
-        self.object_valueT = tf.nn.rnn_cell._linear(linear_outputT, self.config.num_object, 0.0, scope="objectT")
+        self.object_value = tf.nn.rnn_cell._linear(linear_output, self.config.num_objects, 0.0, scope="object")
+        self.object_valueT = tf.nn.rnn_cell._linear(linear_outputT, self.config.num_objects, 0.0, scope="objectT")
 
         self.target_action_value = tf.placeholder(tf.float32, [None])
         self.target_object_value = tf.placeholder(tf.float32, [None])
 
-        self.action_indicator = tf.placeholder(tf.float32, [None, self.config.num_action])
-        self.object_indicator = tf.placeholder(tf.float32, [None, self.config.num_object])
+        self.action_indicator = tf.placeholder(tf.float32, [None, self.config.num_actions])
+        self.object_indicator = tf.placeholder(tf.float32, [None, self.config.num_objects])
 
         self.pred_action_value = tf.reduce_sum(tf.mul(self.action_indicator, self.action_value), 1)
         self.pred_object_value = tf.reduce_sum(tf.mul(self.object_indicator, self.object_value), 1)
@@ -91,7 +92,7 @@ class DQN:
 
         # Clipping gradients
 
-        self.optim_ = tf.train.RMSPropOptimizer(learning_rate = self.config.LEARNING_RATE, decay = 1, momentum = self.config.GRADIENT_MOMENTUM)
+        self.optim_ = tf.train.RMSPropOptimizer(learning_rate = self.config.LEARNING_RATE)
         tvars = tf.trainable_variables()
         def ClipIfNotNone(grad,var):
             if grad is None:
@@ -155,13 +156,13 @@ class DQN:
         if self.timeStep % self.config.UPDATE_FREQUENCY == 0:
             self.copyTargetQNetworkOperation()
 
-    def setPerception(self,state,action,reward,nextstate,terminal,evaluate = False): #nextObservation,action,reward,terminal):
+    def setPerception(self, state, reward, action_indicator, object_indicator, nextstate,terminal,evaluate = False): #nextObservation,action,reward,terminal):
         self.history.add(nextstate)
         if not evaluate:
-            self.memory.add(state,reward,action,nextstate,terminal)
+            self.memory.add(state, reward, action_indicator, object_indicator, nextstate, terminal)
         if self.timeStep > self.config.REPLAY_START_SIZE and self.memory.count > self.config.REPLAY_START_SIZE:
             # Train the network
-            if not evaluate and self.timeStep % self.config.trainfreq ==0:
+            if (not evaluate ) and (self.timeStep % self.config.trainfreq == 0):
                 self.train()
         if not evaluate:
             self.timeStep += 1
@@ -175,11 +176,13 @@ class DQN:
             curr_epsilon = 0.05
             
         if random.random() <= curr_epsilon:
-            action_index = random.randrange(self.actions)
-            object_index = random.randrange(self.objects)
+            action_index = random.randrange(self.config.num_actions)
+            object_index = random.randrange(self.config.num_objects)
         else:
+            self.config.BATCH_SIZE = 1
             QValue_action = self.action_value.eval(feed_dict={self.stateInput:[self.history.get()]},session = self.session)[0]
             Qvalue_object = self.object_value.eval(feed_dict={self.stateInput:[self.history.get()]},session = self.session)[0]
+            self.config.BATCH_SIZE = int(self.config.batch_size)
             action_index = np.argmax(QValue_action)
             object_index = np.argmax(QValue_object)
 

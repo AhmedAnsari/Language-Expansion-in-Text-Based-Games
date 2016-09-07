@@ -13,6 +13,7 @@ class Game(object):
     Args:
       quest_levels: # of quests to complete in each run
     """
+    self.START_NEW_GAME = True
     self.num_rooms = int(num_rooms)
     self.default_reward = float(default_reward)
     self.junk_cmd_reward = float(junk_cmd_reward)
