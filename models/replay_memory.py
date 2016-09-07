@@ -21,7 +21,7 @@ class ReplayMemory:
     self.len_mem = 0
     self.len_prioritized_mem = 0
 
-  def add(self, state, reward, nextstate, action, obj, terminal):
+  def add(self, state, action, obj, reward, nextstate, terminal):
 
     if self.len_mem + self.len_prioritized_mem >= self.memory_size:
       pop1 = self.priority_memory[0][6]
@@ -53,7 +53,14 @@ class ReplayMemory:
       batch = random.sample(self.priority_memory,self.len_prioritized_mem)
       n_sampled = int(self.len_prioritized_mem)
     batch.extend(random.sample(self.memory, self.batch_size - n_sampled))
-    return batch 
+    s_t = [mem[0] for mem in batch]
+    action = [mem[1] for mem in batch]
+    obj = [mem[2] for mem in batch]
+    reward = [mem[3] for mem in batch]
+    next_state = [mem[4] for mem in batch]
+    terminal = [mem[5] for mem in batch]
+    return s_t, action, obj, reward, next_state, terminal
+
     
   def save_memory(self):
       fp = open(self.model_dir+'/replay_file.save','wb')

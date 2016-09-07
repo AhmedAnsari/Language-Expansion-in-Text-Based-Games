@@ -115,7 +115,7 @@ class HomeGame(Game):
       print(log)
       if reward > 0:
         time.sleep(2)
-    print reward, 
+    # print reward 
     # remove completed quest and refresh new quest
     if reward >= 1:
       self.quest_checklist = self.quest_checklist[1:]
@@ -171,13 +171,13 @@ class HomeGame(Game):
     self.client.send('look')
     desc = self.client.get()
     if ("REWARD" in text) and (self.goals[0] in desc):
-      print "Text: ",
-      print text
-      print "Desc: ",
-      print desc
-      print "Goal: ",
-      print self.goal_room[0]
-      print self.objects, self.actions      
+      # print "Text: ",
+      # print text
+      # print "Desc: ",
+      # print desc
+      # print "Goal: ",
+      # print self.goal_room[0]
+      # print self.objects, self.actions      
       return True
     else:
       return False

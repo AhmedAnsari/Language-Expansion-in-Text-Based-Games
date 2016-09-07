@@ -20,5 +20,5 @@ class History:
     self.history *= 0
 
   def get(self):
-    return self.history
+    return self.history.tolist()
       

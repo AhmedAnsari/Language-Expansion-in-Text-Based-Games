@@ -159,7 +159,7 @@ class DQN:
     def setPerception(self, state, reward, action_indicator, object_indicator, nextstate,terminal,evaluate = False): #nextObservation,action,reward,terminal):
         self.history.add(nextstate)
         if not evaluate:
-            self.memory.add(state, reward, action_indicator, object_indicator, nextstate, terminal)
+            self.memory.add(state, action_indicator, object_indicator, reward, nextstate, terminal)
         if self.timeStep > self.config.REPLAY_START_SIZE and self.memory.count > self.config.REPLAY_START_SIZE:
             # Train the network
             if (not evaluate ) and (self.timeStep % self.config.trainfreq == 0):
