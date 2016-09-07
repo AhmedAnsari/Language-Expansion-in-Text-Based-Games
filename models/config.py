@@ -19,7 +19,7 @@ class Config:
         self.LEARNING_RATE = 0.0005
         # self.GRADIENT_MOMENTUM = 0.95
         # self.SQUARED_GRADIENT_MOMENTUM = 0.95
-        self.UPDATE_FREQUENCY = 10 # Number of parameter updates after which the target parameters are updated
+        self.UPDATE_FREQUENCY = 10000 # Number of parameter updates after which the target parameters are updated
         self.LOAD_WEIGHTS = False
         self.REPLAY_START_SIZE = 1000 #minimum number of previous transitions to be stored before training starts
         self.INITIAL_EPSILON = 1 # starting value of epsilon

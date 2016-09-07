@@ -85,7 +85,7 @@ class HomeGame(Game):
 
 
 
-    for idx in xrange(len(self.quest_checklist)):
+    for idx in xrange(len(self.quests)):
       self.quest_checklist.append(idxs[idx])
       self.goal_room.append(self.goals[idxs[idx]])
 

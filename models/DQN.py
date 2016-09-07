@@ -33,10 +33,10 @@ class DQN:
 
 
         embed = tf.get_variable("embed", [self.config.vocab_size, self.config.embed_dim])
-        embedT = tf.get_variable("embedT", [self.config.vocab_size, self.config.embed_dim])
+        # embedT = tf.get_variable("embedT", [self.config.vocab_size, self.config.embed_dim])
 
         word_embeds = tf.nn.embedding_lookup(embed, self.stateInput) # @codewalk: What is this line doing ?
-        word_embedsT = tf.nn.embedding_lookup(embedT, self.stateInputT) # @codewalk: What is this line doing ?
+        word_embedsT = tf.nn.embedding_lookup(embed, self.stateInputT) # @codewalk: What is this line doing ?
 
         self.initializer = tf.truncated_normal_initializer(stddev = 0.02)
 
