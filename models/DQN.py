@@ -105,6 +105,7 @@ class DQN:
         if not(self.config.LOAD_WEIGHTS and self.load_weights()):
             self.session.run(tf.initialize_all_variables())
             # self.copyTargetQNetworkOperation()
+        self.saver = tf.train.Saver()
 
 
     def copyTargetQNetworkOperation(self):

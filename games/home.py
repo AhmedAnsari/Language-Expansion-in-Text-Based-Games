@@ -105,7 +105,7 @@ class HomeGame(Game):
     room_description = self.client.get()
 
     texts, reward = self.parse_game_output(result, room_description)
-
+    
     if self.debug:
       log = " [@] get_state(\n\tdescription\t= %s \n\tquest\t\t= %s " % (texts[0], texts[1])
       if action != None and object_ != None:
