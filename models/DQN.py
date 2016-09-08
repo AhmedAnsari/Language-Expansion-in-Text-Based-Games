@@ -39,7 +39,8 @@ class DQN:
         word_embedsT = tf.nn.embedding_lookup(embed, self.stateInputT) # @codewalk: What is this line doing ?
 
         # self.initializer = tf.truncated_normal_initializer(stddev = 0.02)
-        self.initializer = tf.random_uniform_initializer(minval=-1.0, maxval=1.0, seed=None, dtype=tf.float32)        
+        # self.initializer = tf.random_uniform_initializer(minval=-1.0, maxval=1.0, seed=None, dtype=tf.float32)        
+        self.initializer = tf.contrib.layers.xavier_initializer()
 
         self.cell = tf.nn.rnn_cell.LSTMCell(self.config.rnn_size, initializer = self.initializer)
         self.cellT = tf.nn.rnn_cell.LSTMCell(self.config.rnn_size, initializer = self.initializer)
@@ -55,8 +56,8 @@ class DQN:
         output_embed = tf.transpose(tf.pack(outputs), [1, 0, 2])
         output_embedT = tf.transpose(tf.pack(outputsT), [1, 0, 2])
 
-        mean_pool = tf.nn.relu(tf.reduce_mean(output_embed, 1))
-        mean_poolT = tf.nn.relu(tf.reduce_mean(output_embedT, 1))
+        mean_pool = tf.reduce_mean(output_embed, 1)
+        mean_poolT = tf.reduce_mean(output_embedT, 1)
 
         linear_output = tf.nn.relu(tf.nn.rnn_cell._linear(mean_pool, int(output_embed.get_shape()[2]), 0.0, scope="linearN"))
         linear_outputT = tf.nn.relu(tf.nn.rnn_cell._linear(mean_poolT, int(output_embedT.get_shape()[2]), 0.0, scope="linearT"))
@@ -99,7 +100,7 @@ class DQN:
         self.W = ["LSTMN", "linearN", "actionN", "objectN"]
         self.target_W = ["LSTMT", "linearT", "actionT", "objectT"]
 
-        for i in range(len(self.W))
+        for i in range(len(self.W)):
             vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope = self.W[i])
             varsT = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope = self.target_W[i])
 
@@ -129,7 +130,7 @@ class DQN:
             self.session.run(tf.initialize_all_variables())
 
 
-
+        self.copyTargetQNetworkOperation()
         self.saver = tf.train.Saver()
 
 
