@@ -110,10 +110,11 @@ class DQN:
 
 
         if not(self.config.LOAD_WEIGHTS and self.load_weights()):
+            self.merged = tf.merge_all_summaries()
+            self.train_writer = tf.train.SummaryWriter(self.config.summaries_dir + '/train',self.session.graph)            
             self.session.run(tf.initialize_all_variables())
 
-            merged = tf.merge_all_summaries()
-            self.train_writer = tf.train.SummaryWriter(self.config.summaries_dir + '/train',self.session.graph)
+
 
         self.saver = tf.train.Saver()
 
@@ -154,8 +155,7 @@ class DQN:
             # for x, y in val_op:
             # 	res = x - y
             # 	print sum(res)
-            summary = self.session.run(self.merged, feed_dict=feed_dict(False))
-            train_writer.add_summary(summary, i)
+
 
 
 
@@ -184,13 +184,15 @@ class DQN:
                 target_action_batch.append(reward_batch[i] + self.config.GAMMA* np.max(QValue_action_batch[i]))
                 target_object_batch.append(reward_batch[i] + self.config.GAMMA* np.max(QValue_object_batch[i]))
 
-        self.optim.run(feed_dict={
+        
+        _ , summary = self.session.run([self.optim, self.merged],feed_dict={
                 self.target_action_value : target_action_batch,
                 self.target_object_value : target_object_batch,
                 self.action_indicator : action_batch,
                 self.object_indicator : obj_batch,
                 self.stateInput : state_batch
-                },session = self.session)
+                })
+        self.train_writer.add_summary(summary, i)
 
         # save network every 10000 iteration
         if self.timeStep % 10000 == 0:

@@ -66,6 +66,7 @@ def playgame(config,game):
 #            brain.memory.save_memory()
             
         if (brain.timeStep) > config.MAX_FRAMES:
+            brain.train_writer.close()
             break
 
     brain.session.close()
