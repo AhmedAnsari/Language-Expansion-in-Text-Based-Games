@@ -117,11 +117,11 @@ class DQN:
         tvars = tf.trainable_variables()
         def ClipIfNotNone(grad,var):
             if grad is None:
-                return grad
-            return tf.clip_by_norm(grad,20)
-        grads = [ClipIfNotNone(i,var) for i,var in zip(tf.gradients(self.loss, tvars),tvars)]
+                return (grad, var)
+            return (tf.clip_by_norm(grad,10), var)
+        grads = [ClipIfNotNone(i,var) for i,var in tf.compute_gradients(self.loss, tvars)]
 
-        self.optim = self.optim_.apply_gradients(zip(grads, tvars))
+        self.optim = self.optim_.apply_gradients(grads)
 
 
         if not(self.config.LOAD_WEIGHTS and self.load_weights()):
