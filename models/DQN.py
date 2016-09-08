@@ -79,12 +79,18 @@ class DQN:
         self.target_qpred = (self.target_action_value + self.target_object_value)/2
         self.qpred = (self.pred_action_value + self.pred_object_value)/2
 
-        self.delta = self.target_qpred - self.qpred
+        with tf.name_scope('delta'):
+            self.delta = self.target_qpred - self.qpred
+            self.variable_summaries(self.delta, 'delta')
 
         if self.config.clipDelta:
-            self.delta = tf.clip_by_value(self.delta, self.config.minDelta, self.config.maxDelta, name='clipped_delta')
-
-        self.loss = tf.reduce_mean(tf.square(self.delta), name='loss')
+                with tf.name_scope('clippeddelta'):
+                    self.delta = tf.clip_by_value(self.delta, self.config.minDelta, self.config.maxDelta, name='clipped_delta')
+                    self.variable_summaries(self.delta, 'clippeddelta')
+                    
+        with tf.name_scope('loss'):
+            self.loss = tf.reduce_mean(tf.square(self.delta), name='loss')
+            self.variable_summaries(self.loss, 'loss')
 
         self.W = ["LSTMN", "linearN", "actionN", "objectN"]
         self.target_W = ["LSTMT", "linearT", "actionT", "objectT"]
@@ -99,14 +105,30 @@ class DQN:
                 return grad
             return tf.clip_by_norm(grad,20)
         grads = [ClipIfNotNone(i,var) for i,var in zip(tf.gradients(self.loss, tvars),tvars)]
+
         self.optim = self.optim_.apply_gradients(zip(grads, tvars))
 
 
         if not(self.config.LOAD_WEIGHTS and self.load_weights()):
             self.session.run(tf.initialize_all_variables())
-            # self.copyTargetQNetworkOperation()
+
+            merged = tf.merge_all_summaries()
+            self.train_writer = tf.train.SummaryWriter(self.config.summaries_dir + '/train',self.session.graph)
+
         self.saver = tf.train.Saver()
 
+
+    def variable_summaries(self, var, name):
+      """Attach a lot of summaries to a Tensor."""
+      with tf.name_scope('summaries'):
+        mean = tf.reduce_mean(var)
+        tf.scalar_summary('mean/' + name, mean)
+        with tf.name_scope('stddev'):
+          stddev = tf.sqrt(tf.reduce_sum(tf.square(var - mean)))
+        tf.scalar_summary('sttdev/' + name, stddev)
+        tf.scalar_summary('max/' + name, tf.reduce_max(var))
+        tf.scalar_summary('min/' + name, tf.reduce_min(var))
+        tf.histogram_summary(name, var)
 
     def copyTargetQNetworkOperation(self):
         for i in range(len(self.W)):
@@ -121,6 +143,9 @@ class DQN:
             # print len(varsT)
             copy_op = zip(varsT, vars)
             self.session.run(map(lambda (x,y): x.assign(y.eval(session = self.session)),copy_op))
+
+            with tf.name_scope('activations'):
+                map(lambda x:tf.histogram_summary('activations/'+str(x.name), x), vars)
             # value1 = self.session.run(vars)
             # value2 = self.session.run(varsT)
             # print len(value1)
@@ -129,6 +154,9 @@ class DQN:
             # for x, y in val_op:
             # 	res = x - y
             # 	print sum(res)
+            summary = self.session.run(self.merged, feed_dict=feed_dict(False))
+            train_writer.add_summary(summary, i)
+
 
 
 

@@ -8,6 +8,7 @@ class Config:
         self.memory_size = 100000 # number of previous transitions to remember,
         self.GAMMA = 0.5 # decay rate of past observations
         self.model_dir = os.getcwd()+'/Savednetworks/'
+        self.summaries_dir = os.getcwd()+'/logs/'
 
         #dqn
         self.vocab_size = 100
