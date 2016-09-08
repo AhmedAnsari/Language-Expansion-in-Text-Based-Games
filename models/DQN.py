@@ -88,6 +88,10 @@ class DQN:
                     self.delta = tf.clip_by_value(self.delta, self.config.minDelta, self.config.maxDelta, name='clipped_delta')
                     self.variable_summaries(self.delta, 'clippeddelta')
                     
+
+        self.W = ["LSTMN", "linearN", "actionN", "objectN"]
+        self.target_W = ["LSTMT", "linearT", "actionT", "objectT"]
+
         with tf.name_scope('loss'):
             self.loss = tf.reduce_mean(tf.square(self.delta), name='loss')
             self.variable_summaries(self.loss, 'loss')
@@ -99,8 +103,7 @@ class DQN:
             map(lambda x:tf.histogram_summary('activations/'+str(x.name), x), vars)
         with tf.name_scope('activationsT'):
             map(lambda x:tf.histogram_summary('activations/'+str(x.name), x), varsT)                
-        self.W = ["LSTMN", "linearN", "actionN", "objectN"]
-        self.target_W = ["LSTMT", "linearT", "actionT", "objectT"]
+
 
 
         # Clipping gradients
