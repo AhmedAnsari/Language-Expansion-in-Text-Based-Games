@@ -119,7 +119,7 @@ class DQN:
             if grad is None:
                 return (grad, var)
             return (tf.clip_by_norm(grad,10), var)
-        grads = [ClipIfNotNone(i,var) for i,var in tf.compute_gradients(self.loss, tvars)]
+        grads = [ClipIfNotNone(i,var) for i,var in self.optim_.compute_gradients(self.loss, tvars)]
 
         self.optim = self.optim_.apply_gradients(grads)
 
