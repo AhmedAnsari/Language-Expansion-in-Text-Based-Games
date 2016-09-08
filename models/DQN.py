@@ -89,20 +89,23 @@ class DQN:
                     self.variable_summaries(self.delta, 'clippeddelta')
                     
 
-        self.W = ["LSTMN", "linearN", "actionN", "objectN"]
-        self.target_W = ["LSTMT", "linearT", "actionT", "objectT"]
+        
 
         with tf.name_scope('loss'):
             self.loss = tf.reduce_mean(tf.square(self.delta), name='loss')
             self.variable_summaries(self.loss, 'loss')
 
-        vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope = self.W[i])
-        varsT = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope = self.target_W[i])
+        self.W = ["LSTMN", "linearN", "actionN", "objectN"]
+        self.target_W = ["LSTMT", "linearT", "actionT", "objectT"]
 
-        with tf.name_scope('activationsN'):
-            map(lambda x:tf.histogram_summary('activations/'+str(x.name), x), vars)
-        with tf.name_scope('activationsT'):
-            map(lambda x:tf.histogram_summary('activations/'+str(x.name), x), varsT)                
+        for i in range(len(self.W))
+            vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope = self.W[i])
+            varsT = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope = self.target_W[i])
+
+            with tf.name_scope('activationsN'):
+                map(lambda x:tf.histogram_summary('activations/'+str(x.name), x), vars)
+            with tf.name_scope('activationsT'):
+                map(lambda x:tf.histogram_summary('activations/'+str(x.name), x), varsT)                
 
 
 
