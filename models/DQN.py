@@ -38,7 +38,8 @@ class DQN:
         word_embeds = tf.nn.embedding_lookup(embed, self.stateInput) # @codewalk: What is this line doing ?
         word_embedsT = tf.nn.embedding_lookup(embed, self.stateInputT) # @codewalk: What is this line doing ?
 
-        self.initializer = tf.truncated_normal_initializer(stddev = 0.02)
+        # self.initializer = tf.truncated_normal_initializer(stddev = 0.02)
+        self.initializer = tf.random_uniform_initializer(minval=-1.0, maxval=1.0, seed=None, dtype=tf.float32)        
 
         self.cell = tf.nn.rnn_cell.LSTMCell(self.config.rnn_size, initializer = self.initializer)
         self.cellT = tf.nn.rnn_cell.LSTMCell(self.config.rnn_size, initializer = self.initializer)
@@ -79,15 +80,34 @@ class DQN:
         self.target_qpred = (self.target_action_value + self.target_object_value)/2
         self.qpred = (self.pred_action_value + self.pred_object_value)/2
 
-        self.delta = self.target_qpred - self.qpred
+        with tf.name_scope('delta'):
+            self.delta = self.target_qpred - self.qpred
+            self.variable_summaries(self.delta, 'delta')
 
         if self.config.clipDelta:
-            self.delta = tf.clip_by_value(self.delta, self.config.minDelta, self.config.maxDelta, name='clipped_delta')
+                with tf.name_scope('clippeddelta'):
+                    self.delta = tf.clip_by_value(self.delta, self.config.minDelta, self.config.maxDelta, name='clipped_delta')
+                    self.variable_summaries(self.delta, 'clippeddelta')
+                    
 
-        self.loss = tf.reduce_mean(tf.square(self.delta), name='loss')
+        
+
+        with tf.name_scope('loss'):
+            self.loss = tf.reduce_mean(tf.square(self.delta), name='loss')
+            self.variable_summaries(self.loss, 'loss')
 
         self.W = ["LSTMN", "linearN", "actionN", "objectN"]
         self.target_W = ["LSTMT", "linearT", "actionT", "objectT"]
+
+        for i in range(len(self.W))
+            vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope = self.W[i])
+            varsT = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope = self.target_W[i])
+
+            with tf.name_scope('activationsN'):
+                map(lambda x:tf.histogram_summary('activations/'+str(x.name), x), vars)
+            with tf.name_scope('activationsT'):
+                map(lambda x:tf.histogram_summary('activations/'+str(x.name), x), varsT)                
+
 
 
         # Clipping gradients
@@ -99,14 +119,31 @@ class DQN:
                 return grad
             return tf.clip_by_norm(grad,20)
         grads = [ClipIfNotNone(i,var) for i,var in zip(tf.gradients(self.loss, tvars),tvars)]
+
         self.optim = self.optim_.apply_gradients(zip(grads, tvars))
 
 
         if not(self.config.LOAD_WEIGHTS and self.load_weights()):
+            self.merged = tf.merge_all_summaries()
+            self.train_writer = tf.train.SummaryWriter(self.config.summaries_dir + '/train',self.session.graph)            
             self.session.run(tf.initialize_all_variables())
-            # self.copyTargetQNetworkOperation()
+
+
+
         self.saver = tf.train.Saver()
 
+
+    def variable_summaries(self, var, name):
+      """Attach a lot of summaries to a Tensor."""
+      with tf.name_scope('summaries'):
+        mean = tf.reduce_mean(var)
+        tf.scalar_summary('mean/' + name, mean)
+        with tf.name_scope('stddev'):
+          stddev = tf.sqrt(tf.reduce_sum(tf.square(var - mean)))
+        tf.scalar_summary('sttdev/' + name, stddev)
+        tf.scalar_summary('max/' + name, tf.reduce_max(var))
+        tf.scalar_summary('min/' + name, tf.reduce_min(var))
+        tf.histogram_summary(name, var)
 
     def copyTargetQNetworkOperation(self):
         for i in range(len(self.W)):
@@ -121,6 +158,9 @@ class DQN:
             # print len(varsT)
             copy_op = zip(varsT, vars)
             self.session.run(map(lambda (x,y): x.assign(y.eval(session = self.session)),copy_op))
+
+            with tf.name_scope('activations'):
+                map(lambda x:tf.histogram_summary('activations/'+str(x.name), x), vars)
             # value1 = self.session.run(vars)
             # value2 = self.session.run(varsT)
             # print len(value1)
@@ -129,6 +169,8 @@ class DQN:
             # for x, y in val_op:
             # 	res = x - y
             # 	print sum(res)
+
+
 
 
 
@@ -156,13 +198,15 @@ class DQN:
                 target_action_batch.append(reward_batch[i] + self.config.GAMMA* np.max(QValue_action_batch[i]))
                 target_object_batch.append(reward_batch[i] + self.config.GAMMA* np.max(QValue_object_batch[i]))
 
-        self.optim.run(feed_dict={
+        
+        _ , summary = self.session.run([self.optim, self.merged],feed_dict={
                 self.target_action_value : target_action_batch,
                 self.target_object_value : target_object_batch,
                 self.action_indicator : action_batch,
                 self.object_indicator : obj_batch,
                 self.stateInput : state_batch
-                },session = self.session)
+                })
+        self.train_writer.add_summary(summary, i)
 
         # save network every 10000 iteration
         if self.timeStep % 10000 == 0:

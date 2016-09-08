@@ -8,10 +8,11 @@ class Config:
         self.memory_size = 100000 # number of previous transitions to remember,
         self.GAMMA = 0.5 # decay rate of past observations
         self.model_dir = os.getcwd()+'/Savednetworks/'
+        self.summaries_dir = os.getcwd()+'/logs/'
 
         #dqn
         self.vocab_size = 100
-        self.embed_dim = 100
+        self.embed_dim = 20
         self.rnn_size = 100
         self.clipDelta = True
         self.minDelta = -1.0
@@ -19,7 +20,7 @@ class Config:
         self.LEARNING_RATE = 0.0005
         # self.GRADIENT_MOMENTUM = 0.95
         # self.SQUARED_GRADIENT_MOMENTUM = 0.95
-        self.UPDATE_FREQUENCY = 10000 # Number of parameter updates after which the target parameters are updated
+        self.UPDATE_FREQUENCY = 10 # Number of parameter updates after which the target parameters are updated
         self.LOAD_WEIGHTS = False
         self.REPLAY_START_SIZE = 1000 #minimum number of previous transitions to be stored before training starts
         self.INITIAL_EPSILON = 1 # starting value of epsilon
