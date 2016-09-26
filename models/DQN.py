@@ -158,8 +158,8 @@ class DQN:
 
         # self.optim = self.optim_.apply_gradients(grads)
         # self.optim = tf.train.RMSPropOptimizer(learning_rate = self.config.LEARNING_RATE).minimize(self.loss_a + self.loss_o)
-        self.optim = tf.train.RMSPropOptimizer(learning_rate = self.config.LEARNING_RATE).minimize(self.loss)
-
+        # self.optim = tf.train.RMSPropOptimizer(learning_rate = self.config.LEARNING_RATE).minimize(self.loss)
+        self.optim = tf.train.AdagradOptimizer(learning_rate = self.config.LEARNING_RATE).minimize(self.loss)
         if not(self.config.LOAD_WEIGHTS and self.load_weights()):
             # self.merged = tf.merge_all_summaries()
             self.merged = tf.merge_summary(summary_list)
