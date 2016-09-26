@@ -38,9 +38,9 @@ class DQN:
         word_embeds = tf.nn.embedding_lookup(embed, self.stateInput) # @codewalk: What is this line doing ?
         word_embedsT = tf.nn.embedding_lookup(embed, self.stateInputT) # @codewalk: What is this line doing ?
 
-        # self.initializer = tf.truncated_normal_initializer(stddev = 0.02)
+        self.initializer = tf.truncated_normal_initializer(stddev = 0.02)
         # self.initializer = tf.random_uniform_initializer(minval=-1.0, maxval=1.0, seed=None, dtype=tf.float32)        
-        self.initializer = tf.contrib.layers.xavier_initializer()
+        # self.initializer = tf.contrib.layers.xavier_initializer()
 
         self.cell = tf.nn.rnn_cell.LSTMCell(self.config.rnn_size, initializer = self.initializer)
         self.cellT = tf.nn.rnn_cell.LSTMCell(self.config.rnn_size, initializer = self.initializer)
@@ -78,24 +78,54 @@ class DQN:
         self.pred_action_value = tf.reduce_sum(tf.mul(self.action_indicator, self.action_value), 1)
         self.pred_object_value = tf.reduce_sum(tf.mul(self.object_indicator, self.object_value), 1)
 
-        self.target_qpred = (self.target_action_value + self.target_object_value)/2
-        self.qpred = (self.pred_action_value + self.pred_object_value)/2
+        self.target_qpred = tf.truediv(tf.add(self.target_action_value,self.target_object_value),2.0)
+        self.qpred = tf.truediv(tf.add(self.pred_action_value,self.pred_object_value),2.0)
 
+        summary_list = []        
         with tf.name_scope('delta'):
+            # self.delta_a = self.target_action_value - self.pred_action_value
+            # self.delta_o = self.target_object_value - self.pred_object_value
+            # self.variable_summaries(self.delta_a, 'delta_a',summary_list)
+            # self.variable_summaries(self.delta_o, 'delta_o',summary_list)
             self.delta = self.target_qpred - self.qpred
-            self.variable_summaries(self.delta, 'delta')
+            self.variable_summaries(self.delta, 'delta',summary_list)
 
         if self.config.clipDelta:
                 with tf.name_scope('clippeddelta'):
-                    self.delta = tf.clip_by_value(self.delta, self.config.minDelta, self.config.maxDelta, name='clipped_delta')
-                    self.variable_summaries(self.delta, 'clippeddelta')
+                    # self.delta = tf.clip_by_value(self.delta, self.config.minDelta, self.config.maxDelta, name='clipped_delta')
+                    # self.quadratic_part_a = tf.minimum(abs(self.delta_a), config.maxDelta)
+                    # self.linear_part_a = abs(self.delta_a) - self.quadratic_part_a
+
+                    # self.quadratic_part_o = tf.minimum(abs(self.delta_o), config.maxDelta)
+                    # self.linear_part_o = abs(self.delta_o) - self.quadratic_part_o
+
+                    self.quadratic_part = tf.minimum(abs(self.delta), config.maxDelta)
+                    self.linear_part = abs(self.delta) - self.quadratic_part
+
+                    # self.variable_summaries(self.delta, 'clippeddelta',summary_list)
+                    # self.variable_summaries(self.linear_part_a, 'linear_part_a',summary_list)
+                    # self.variable_summaries(self.quadratic_part_a, 'quadratic_part_a',summary_list)
+
+                    # self.variable_summaries(self.linear_part_o, 'linear_part_o',summary_list)
+                    # self.variable_summaries(self.quadratic_part_o, 'quadratic_part_o',summary_list)
+
+                    self.variable_summaries(self.linear_part, 'linear_part',summary_list)
+                    self.variable_summaries(self.quadratic_part, 'quadratic_part',summary_list)
+
                     
 
         
 
         with tf.name_scope('loss'):
-            self.loss = tf.reduce_mean(tf.square(self.delta), name='loss')
-            self.variable_summaries(self.loss, 'loss')
+            #self.loss = 0.5*tf.reduce_mean(tf.square(self.delta), name='loss')
+            # self.loss_a = tf.reduce_mean(0.5*tf.square(self.quadratic_part_a) + config.clipDelta * self.linear_part_a, name='loss_a')  
+            # self.variable_summaries(self.loss_a, 'loss_a',summary_list)
+
+            # self.loss_o = tf.reduce_mean(0.5*tf.square(self.quadratic_part_o) + config.clipDelta * self.linear_part_o, name='loss_o')  
+            # self.variable_summaries(self.loss_o, 'loss_o',summary_list)
+
+            self.loss = tf.reduce_mean(0.5*tf.square(self.quadratic_part) + config.clipDelta * self.linear_part, name='loss')  
+            self.variable_summaries(self.loss, 'loss',summary_list)            
 
         self.W = ["LSTMN", "linearN", "actionN", "objectN"]
         self.target_W = ["LSTMT", "linearT", "actionT", "objectT"]
@@ -105,27 +135,34 @@ class DQN:
             varsT = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope = self.target_W[i])
 
             with tf.name_scope('activationsN'):
-                map(lambda x:tf.histogram_summary('activations/'+str(x.name), x), vars)
+                summary_list.extend(map(lambda x:tf.histogram_summary('activations/'+str(x.name), x), vars))
             with tf.name_scope('activationsT'):
-                map(lambda x:tf.histogram_summary('activations/'+str(x.name), x), varsT)                
+                summary_list.extend(map(lambda x:tf.histogram_summary('activations/'+str(x.name), x), varsT))
 
-
+        self.summary_placeholders = {}
+        self.summary_ops = {}
+        scalar_summary_tags = ['average.q_a','average.q_o']
+        for tag in scalar_summary_tags:
+            self.summary_placeholders[tag] = tf.placeholder('float32', None, name=tag.replace(' ', '_'))
+            self.summary_ops[tag]  = tf.scalar_summary('evaluation_data/'+tag, self.summary_placeholders[tag])
 
         # Clipping gradients
 
-        self.optim_ = tf.train.RMSPropOptimizer(learning_rate = self.config.LEARNING_RATE)
-        tvars = tf.trainable_variables()
-        def ClipIfNotNone(grad,var):
-            if grad is None:
-                return (grad, var)
-            return (tf.clip_by_norm(grad,10), var)
-        grads = [ClipIfNotNone(i,var) for i,var in self.optim_.compute_gradients(self.loss, tvars)]
+        # self.optim_ = tf.train.RMSPropOptimizer(learning_rate = self.config.LEARNING_RATE)
+        # tvars = tf.trainable_variables()
+        # def ClipIfNotNone(grad,var):
+        #     if grad is None:
+        #         return (grad, var)
+        #     return (tf.clip_by_norm(grad,10), var)
+        # grads = [ClipIfNotNone(i,var) for i,var in self.optim_.compute_gradients(self.loss, tvars)]
 
-        self.optim = self.optim_.apply_gradients(grads)
-
+        # self.optim = self.optim_.apply_gradients(grads)
+        # self.optim = tf.train.RMSPropOptimizer(learning_rate = self.config.LEARNING_RATE).minimize(self.loss_a + self.loss_o)
+        self.optim = tf.train.RMSPropOptimizer(learning_rate = self.config.LEARNING_RATE).minimize(self.loss)
 
         if not(self.config.LOAD_WEIGHTS and self.load_weights()):
-            self.merged = tf.merge_all_summaries()
+            # self.merged = tf.merge_all_summaries()
+            self.merged = tf.merge_summary(summary_list)
             self.train_writer = tf.train.SummaryWriter(self.config.summaries_dir + '/train',self.session.graph)            
             self.session.run(tf.initialize_all_variables())
 
@@ -134,17 +171,23 @@ class DQN:
         self.saver = tf.train.Saver()
 
 
-    def variable_summaries(self, var, name):
-      """Attach a lot of summaries to a Tensor."""
-      with tf.name_scope('summaries'):
-        mean = tf.reduce_mean(var)
-        tf.scalar_summary('mean/' + name, mean)
-        with tf.name_scope('stddev'):
-          stddev = tf.sqrt(tf.reduce_sum(tf.square(var - mean)))
-        tf.scalar_summary('sttdev/' + name, stddev)
-        tf.scalar_summary('max/' + name, tf.reduce_max(var))
-        tf.scalar_summary('min/' + name, tf.reduce_min(var))
-        tf.histogram_summary(name, var)
+    def variable_summaries(self, var, name,list_summary):
+        """Attach a lot of summaries to a Tensor."""
+        with tf.name_scope('summaries'):
+            mean = tf.reduce_mean(var)
+            list_summary.append(tf.scalar_summary('mean/' + name, mean))
+            with tf.name_scope('stddev'):
+                stddev = tf.sqrt(tf.reduce_sum(tf.square(var - mean)))
+            list_summary.append(tf.scalar_summary('sttdev/' + name, stddev))
+            list_summary.append(tf.scalar_summary('max/' + name, tf.reduce_max(var)))
+            list_summary.append(tf.scalar_summary('min/' + name, tf.reduce_min(var)))
+            list_summary.append(tf.histogram_summary(name, var))
+
+    def inject_summary(self, tag_dict, step):
+        summary_str_lists = self.session.run([self.summary_ops[tag] for tag in tag_dict.keys()], { \
+        self.summary_placeholders[tag]: value for tag, value in tag_dict.items()})
+        for summary_str in summary_str_lists:
+            self.train_writer.add_summary(summary_str, self.timeStep)                    
 
     def copyTargetQNetworkOperation(self):
         for i in range(len(self.W)):
@@ -160,8 +203,8 @@ class DQN:
             copy_op = zip(varsT, vars)
             self.session.run(map(lambda (x,y): x.assign(y.eval(session = self.session)),copy_op))
 
-            with tf.name_scope('activations'):
-                map(lambda x:tf.histogram_summary('activations/'+str(x.name), x), vars)
+            # with tf.name_scope('activations'):
+            #     map(lambda x:tf.histogram_summary('activations/'+str(x.name), x), vars)
             # value1 = self.session.run(vars)
             # value2 = self.session.run(varsT)
             # print len(value1)

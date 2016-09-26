@@ -57,6 +57,39 @@ def playgame(config,game):
                 print >> fp, (total_reward / (num_episodes * 1.0))    
             game.START_NEW_GAME = True
 
+#####################################################################
+        #for evaluating qvalues
+        if (brain.timeStep % config.EVAL == 0) and (brain.timeStep != 0):
+            if (brain.timeStep / config.EVAL == 1):
+                if not ((os.path.exists("checkStates.txt")) and (os.path.getsize("checkStates.txt") > 0)):                    
+                    assert config.SAMPLE_STATES % config.BATCH_SIZE == 0 
+                    assert config.SAMPLE_STATES < brain.memory.count
+                    checkStates, _1, _2, _3, _4, _5 = brain.memory.sample()
+                    with open("checkStates.txt", "w") as fp:
+                        cpickle.dump(checkStates,fp)
+                else:
+                    with open("checkStates.txt", 'r') as fp:
+                        checkStates = cpickle.load(fp)
+####################################################################
+            evalQValues_a = brain.action_valueT.eval(feed_dict={brain.stateInputT:checkStates},session = brain.session)
+            maxEvalQValues_a = np.max(evalQValues_a, axis = 1)
+            avgEvalQValues_a = np.mean(maxEvalQValues_a)
+
+            with open("evalQValue_a.txt", "a") as fp:
+                print >>fp,avgEvalQValues_a
+
+            evalQValues_o = brain.object_valueT.eval(feed_dict={brain.stateInputT:checkStates},session = brain.session)
+            maxEvalQValues_o = np.max(evalQValues_o, axis = 1)
+            avgEvalQValues_o = np.mean(maxEvalQValues_o)
+
+            with open("evalQValue_o.txt", "a") as fp:
+                print >>fp,avgEvalQValues_o
+#####################################################################
+            brain.inject_summary({
+                'average.q_a': avgEvalQValues_a,
+                'average.q_o': avgEvalQValues_o,
+              }, brain.timeStep)
+#####################################################################
 
         # if (brain.timeStep%1000)==0:
             # pbar.update(1000)
