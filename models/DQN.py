@@ -297,9 +297,11 @@ class DQN:
             state_batch = np.zeros([self.config.batch_size, self.config.seq_length])
             state_batch[0] = self.history.get()
             QValue_action = self.action_value.eval(feed_dict={self.stateInput:state_batch},session = self.session)[0]
+            bestAction = np.where(QValue_action == np.max(QValue_action))[0]
             QValue_object = self.object_value.eval(feed_dict={self.stateInput:state_batch},session = self.session)[0]
-            action_index = np.argmax(QValue_action)
-            object_index = np.argmax(QValue_object)
+            bestObject = np.where(QValue_object == np.max(QValue_object))[0]
+            action_index = bestAction[random.randrange(0,bestAction.shape[0])]
+            object_index = bestObject[random.randrange(0,bestObject.shape[0])]
 
 
         if not evaluate:
