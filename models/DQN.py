@@ -83,34 +83,35 @@ class DQN:
 
         summary_list = []        
         with tf.name_scope('delta'):
-            # self.delta_a = self.target_action_value - self.pred_action_value
-            # self.delta_o = self.target_object_value - self.pred_object_value
-            # self.variable_summaries(self.delta_a, 'delta_a',summary_list)
-            # self.variable_summaries(self.delta_o, 'delta_o',summary_list)
-            self.delta = self.target_qpred - self.qpred
-            self.variable_summaries(self.delta, 'delta',summary_list)
+            self.delta_a = self.target_action_value - self.pred_action_value
+            self.delta_o = self.target_object_value - self.pred_object_value
+            self.variable_summaries(self.delta_a, 'delta_a',summary_list)
+            self.variable_summaries(self.delta_o, 'delta_o',summary_list)
+            # self.delta = self.target_qpred - self.qpred
+            # self.variable_summaries(self.delta, 'delta',summary_list)
 
         if self.config.clipDelta:
                 with tf.name_scope('clippeddelta'):
                     # self.delta = tf.clip_by_value(self.delta, self.config.minDelta, self.config.maxDelta, name='clipped_delta')
-                    # self.quadratic_part_a = tf.minimum(abs(self.delta_a), config.maxDelta)
-                    # self.linear_part_a = abs(self.delta_a) - self.quadratic_part_a
 
-                    # self.quadratic_part_o = tf.minimum(abs(self.delta_o), config.maxDelta)
-                    # self.linear_part_o = abs(self.delta_o) - self.quadratic_part_o
+                    self.quadratic_part_a = tf.minimum(abs(self.delta_a), config.maxDelta)
+                    self.linear_part_a = abs(self.delta_a) - self.quadratic_part_a
 
-                    self.quadratic_part = tf.minimum(abs(self.delta), config.maxDelta)
-                    self.linear_part = abs(self.delta) - self.quadratic_part
+                    self.quadratic_part_o = tf.minimum(abs(self.delta_o), config.maxDelta)
+                    self.linear_part_o = abs(self.delta_o) - self.quadratic_part_o
+
+                    # self.quadratic_part = tf.minimum(abs(self.delta), config.maxDelta)
+                    # self.linear_part = abs(self.delta) - self.quadratic_part
 
                     # self.variable_summaries(self.delta, 'clippeddelta',summary_list)
-                    # self.variable_summaries(self.linear_part_a, 'linear_part_a',summary_list)
-                    # self.variable_summaries(self.quadratic_part_a, 'quadratic_part_a',summary_list)
+                    self.variable_summaries(self.linear_part_a, 'linear_part_a',summary_list)
+                    self.variable_summaries(self.quadratic_part_a, 'quadratic_part_a',summary_list)
 
-                    # self.variable_summaries(self.linear_part_o, 'linear_part_o',summary_list)
-                    # self.variable_summaries(self.quadratic_part_o, 'quadratic_part_o',summary_list)
+                    self.variable_summaries(self.linear_part_o, 'linear_part_o',summary_list)
+                    self.variable_summaries(self.quadratic_part_o, 'quadratic_part_o',summary_list)
 
-                    self.variable_summaries(self.linear_part, 'linear_part',summary_list)
-                    self.variable_summaries(self.quadratic_part, 'quadratic_part',summary_list)
+                    # self.variable_summaries(self.linear_part, 'linear_part',summary_list)
+                    # self.variable_summaries(self.quadratic_part, 'quadratic_part',summary_list)
 
                     
 
@@ -118,14 +119,14 @@ class DQN:
 
         with tf.name_scope('loss'):
             #self.loss = 0.5*tf.reduce_mean(tf.square(self.delta), name='loss')
-            # self.loss_a = tf.reduce_mean(0.5*tf.square(self.quadratic_part_a) + config.clipDelta * self.linear_part_a, name='loss_a')  
-            # self.variable_summaries(self.loss_a, 'loss_a',summary_list)
+            self.loss_a = tf.reduce_mean(0.5*tf.square(self.quadratic_part_a) + config.clipDelta * self.linear_part_a, name='loss_a')  
+            self.variable_summaries(self.loss_a, 'loss_a',summary_list)
 
-            # self.loss_o = tf.reduce_mean(0.5*tf.square(self.quadratic_part_o) + config.clipDelta * self.linear_part_o, name='loss_o')  
-            # self.variable_summaries(self.loss_o, 'loss_o',summary_list)
+            self.loss_o = tf.reduce_mean(0.5*tf.square(self.quadratic_part_o) + config.clipDelta * self.linear_part_o, name='loss_o')  
+            self.variable_summaries(self.loss_o, 'loss_o',summary_list)
 
-            self.loss = tf.reduce_mean(0.5*tf.square(self.quadratic_part) + config.clipDelta * self.linear_part, name='loss')  
-            self.variable_summaries(self.loss, 'loss',summary_list)            
+            # self.loss = tf.reduce_mean(0.5*tf.square(self.quadratic_part) + config.clipDelta * self.linear_part, name='loss')  
+            # self.variable_summaries(self.loss, 'loss',summary_list)            
 
         self.W = ["LSTMN", "linearN", "actionN", "objectN"]
         self.target_W = ["LSTMT", "linearT", "actionT", "objectT"]
@@ -159,7 +160,10 @@ class DQN:
         # self.optim = self.optim_.apply_gradients(grads)
         # self.optim = tf.train.RMSPropOptimizer(learning_rate = self.config.LEARNING_RATE).minimize(self.loss_a + self.loss_o)
         # self.optim = tf.train.RMSPropOptimizer(learning_rate = self.config.LEARNING_RATE).minimize(self.loss)
-        self.optim = tf.train.AdagradOptimizer(learning_rate = self.config.LEARNING_RATE).minimize(self.loss)
+        # self.optim = tf.train.AdagradOptimizer(learning_rate = self.config.LEARNING_RATE).minimize(self.loss)
+        # self.optim_a = tf.train.AdagradOptimizer(learning_rate = self.config.LEARNING_RATE).minimize(self.loss_a)
+        # self.optim_o = tf.train.AdagradOptimizer(learning_rate = self.config.LEARNING_RATE).minimize(self.loss_o)
+        self.optim = tf.train.AdagradOptimizer(learning_rate = self.config.LEARNING_RATE).minimize(self.loss_o + self.loss_a )
         if not(self.config.LOAD_WEIGHTS and self.load_weights()):
             # self.merged = tf.merge_all_summaries()
             self.merged = tf.merge_summary(summary_list)
@@ -250,7 +254,7 @@ class DQN:
                 self.object_indicator : obj_batch,
                 self.stateInput : state_batch
                 })
-        self.train_writer.add_summary(summary, i)
+        self.train_writer.add_summary(summary, self.timeStep)
 
         # save network every 10000 iteration
         if self.timeStep % 10000 == 0:

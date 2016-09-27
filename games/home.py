@@ -177,7 +177,7 @@ class HomeGame(Game):
       # print desc
       # print "Goal: ",
       # print self.goal_room[0]
-      # print self.objects, self.actions      
+      # print self.objects, self.actions    
       return True
     else:
       return False
