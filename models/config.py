@@ -28,14 +28,16 @@ class Config:
         self.INITIAL_EPSILON = 1 # starting value of epsilon
         self.FINAL_EPSILON = 0.2 # final value of epsilon
         self.trainfreq = 4
-        self.EXPLORE = 1000000. # frames over which to anneal epsilon
+        self.EXPLORE = 200000. # frames over which to anneal epsilon
 
         #parameters for the game
         self.MAX_FRAMES = 20000000
         self.max_episode_length = 20
         self.game_dir = '../text-world'
         self.seq_length = 30
-        self.EVAL = 1000
+        self.STEP_SIZE = 1000
+        self.EVAL = self.STEP_SIZE
+        self.EVAL_FREQ = self.STEP_SIZE
         self.SAMPLE_STATES = 64
         self.device = '/cpu:0'      
         
