@@ -7,6 +7,10 @@ from collections import deque
 
 # from .base import Model
 
+#set the seeds
+random.seed(1)
+np.random.seed(10)
+tf.set_random_seed(100)
 
 
 import os
