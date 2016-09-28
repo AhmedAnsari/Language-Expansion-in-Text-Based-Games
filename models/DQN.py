@@ -305,8 +305,8 @@ class DQN:
 
 
         if not evaluate:
-            if self.epsilon > self.config.FINAL_EPSILON and self.timeStep > self.config.REPLAY_START_SIZE:
-                self.epsilon -= (self.config.INITIAL_EPSILON - self.config.FINAL_EPSILON) / self.config.EXPLORE
+            self.epsilon = self.config.FINAL_EPSILON + max(0, (self.config.INITIAL_EPSILON - self.config.FINAL_EPSILON) * (self.config.EXPLORE - math.max(0, self.timeStep - self.config.REPLAY_START_SIZE))/self.config.EXPLORE)
+
 
         return action_index, object_index
     
