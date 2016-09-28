@@ -3,6 +3,7 @@ import time
 import string
 import numpy as np
 from .game import Game
+import re
 
 def clean_words(words):
   return [word.lower().translate(None, string.punctuation) for word in words]
@@ -72,19 +73,15 @@ class HomeGame(Game):
     room_idx = np.random.randint(self.num_rooms)
 
     self.client.send('@tel tut#0%s' % room_idx)
+    time.sleep(0.1)
     self.client.get()
-
     self.client.send('l')
     self.client.get()
-
     if self.debug:
       print(" [*] Start Room : %s %s" % (room_idx, self.rooms[room_idx]))
 
   def random_quest(self):
     idxs = np.random.permutation(len(self.quests))
-
-
-
     for idx in xrange(len(self.quests)):
       self.quest_checklist.append(idxs[idx])
       self.goal_room.append(self.goals[idxs[idx]])
@@ -107,13 +104,15 @@ class HomeGame(Game):
     texts, reward = self.parse_game_output(result, room_description)
     
     if self.debug:
-      log = " [@] get_state(\n\tdescription\t= %s \n\tquest\t\t= %s " % (texts[0], texts[1])
-      if action != None and object_ != None:
-        log += "\n\taction\t\t= %s %s " % (action, object_)
-        log += "\n\tresult\t\t= %s)" % (result)
-      log += "\n\treward\t\t= %s)" % (reward)
-      print(log)
+      # log = " [@] get_state(\n\tdescription\t= %s \n\tquest\t\t= %s " % (texts[0], texts[1])
+      # if action != None and object_ != None:
+        # log += "\n\taction\t\t= %s %s " % (action, object_)
+        # log += "\n\tresult\t\t= %s)" % (result)
+      # log += "\n\treward\t\t= %s)" % (reward)
+      print(texts, reward)
+      time.sleep(0.1)
       if reward > 0:
+        print(texts, reward)
         time.sleep(2)
     # print reward 
     # remove completed quest and refresh new quest
@@ -155,13 +154,14 @@ class HomeGame(Game):
   def parse_game_output(self, text, room_description):
     reward = None
     text_to_agent = [room_description, self.get_quest_text(self.quest_checklist[0])]
-
-    if self.goalComplete(text):
-      reward = 1
-      # for i in range(100):
-      #   print text
-    elif 'not available' in text or 'not find' in text:
-      reward = self.junk_cmd_reward
+    for i in xrange(len(text)):
+      if i<len(text) and '<EOM>' in text[i]:
+        text_to_agent = [room_description, self.get_quest_text(self.quest_checklist[0])]
+      elif 'REWARD' in text[i]:
+        if self.actions(self.quest_checklist[0]) in text[i]:
+          reward = int(re.findall(r'\d+',text[i]))
+      elif 'not available' in text[i] or 'not find' in text[i]:
+        reward = self.junk_cmd_reward
     if reward == None:
       reward = self.default_reward
     return text_to_agent, reward
