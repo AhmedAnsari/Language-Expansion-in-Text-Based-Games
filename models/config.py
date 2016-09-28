@@ -36,8 +36,10 @@ class Config:
         self.game_dir = '../text-world'
         self.seq_length = 30 #@Ansari check this
         self.EVAL = 1000
+        self.EVAL = self.STEP_SIZE
+        self.EVAL_FREQ = self.STEP_SIZE
         self.SAMPLE_STATES = 64
-        self.device = '/cpu:0'      
+        self.device = '/cpu:0'
         
     
     def setnumactions(self,numactions):
