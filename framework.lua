@@ -53,11 +53,11 @@ end
 
 function concatString(input)
 	local length = #input
-	print(length[1])
+	--print(length[1])
 
 	output = tostring(input[1])
 	i = 2
-	print(i)
+	--print(i)
 	while (i <= length[1])
 	do
 		output = output .. " " .. tostring(input[i])
@@ -82,7 +82,7 @@ function interact()
 
 	while(1) 
 	do
-		print("I came in while")	
+		--print("I came in while")	
 		input = socket:recv()
 		print(input)	
 		t = mysplit(input, "#")
