@@ -2,7 +2,7 @@
 zmq = require 'lzmq'
 require 'utils'
 local underscore = require 'underscore'
-local DEBUG = false
+local DEBUG = true
 
 local DEFAULT_REWARD = -0.01
 local JUNK_CMD_REWARD = -0.1
@@ -88,11 +88,16 @@ function interact()
 		t = mysplit(input, "#")
 		s = t[1]
 		if s == "getActions" then
-			socket:send(tostring(getActions()))
+			socket:send(tostring(getActionsnumber()))
 		elseif s == "getObjects" then
-			socket:send(tostring(getObjects()))
+			socket:send(tostring(getObjectsnumber()))
 		elseif s == "step_game" then
-			vector, reward, terminal = step_game(tonumber(t[2]), tonumber(t[3]))
+			vector, reward, terminal, available_objects = step_game(tonumber(t[2]), tonumber(t[3]))
+			print("available objects")
+			print(available_objects)
+			if (available_objects == nil) then
+				print("shit")
+			end
 			socket:send(createStateMsg(vector, reward, terminal))
 		elseif s == "newGame" then
 			vector, reward, terminal = newGame()
@@ -180,6 +185,7 @@ function step_game(action_index, object_index, gameLogger)
 		print(actions[action_index] .. ' ' .. objects[object_index])
 	end
 	STEP_COUNT = STEP_COUNT + 1
+	--print(getState(gameLogger))
 	return getState(gameLogger)
 end
 
@@ -454,6 +460,13 @@ function getObjects()
 	return objects
 end
 
+function getActionsnumber()
+	return #actions
+end
+
+function getObjectsnumber()
+	return #objects
+end
 return {
 	makeSymbolMapping = makeSymbolMapping,
 	getActions = getActions, 
