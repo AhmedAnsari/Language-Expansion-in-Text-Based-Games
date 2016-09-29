@@ -1,6 +1,5 @@
 -- Layer to create quests and act as middle-man between Evennia and Agent
-require 'zmq'
-require 'json'
+zmq = require 'lzmq'
 require 'utils'
 local underscore = require 'underscore'
 local DEBUG = false
@@ -8,6 +7,8 @@ local DEBUG = false
 local DEFAULT_REWARD = -0.01
 local JUNK_CMD_REWARD = -0.1
 local STEP_COUNT = 0 -- count the number of steps in current episode
+local QUEST_LEVELS = 1
+local MAX_STEPS = 20
 
 --Simple quests
 quests = {'You are hungry.','You are sleepy.', 'You are bored.', 'You are getting fat.'}
@@ -50,8 +51,23 @@ function mysplit(inputstr, sep)
 	return t
 end
 
+function concatString(input)
+	local length = #input
+	print(length[1])
+
+	output = tostring(input[1])
+	i = 2
+	print(i)
+	while (i <= length[1])
+	do
+		output = output .. " " .. tostring(input[i])
+		i = i+1
+	end
+	return output
+end
+
 function createStateMsg(vector, reward, terminal)
-	stateString = table.concat(vector, " ")
+	stateString = concatString(vector)
 	rewardString = tostring(reward)
 	terminalString = tostring(terminal)
 	msg = stateString .. "#" .. rewardString .. "#" .. terminalString
@@ -61,10 +77,14 @@ end
 function interact()
 	ctx = zmq.init(1)
 	socket = ctx:socket(zmq.REP)
-	socket:bind 'tcp://localhost:12345'
+	socket:bind('tcp://127.0.0.1:12345')
+	print("binding succesfully")
 
-	while true do
+	while(1) 
+	do
+		print("I came in while")	
 		input = socket:recv()
+		print(input)	
 		t = mysplit(input, "#")
 		s = t[1]
 		if s == "getActions" then
@@ -434,7 +454,6 @@ function getObjects()
 	return objects
 end
 
-
 return {
 	makeSymbolMapping = makeSymbolMapping,
 	getActions = getActions, 
@@ -443,5 +462,7 @@ return {
 	step = step_game,
 	newGame = newGame,
 	nextRandomGame = nextRandomGame,
-	vector_function = vector_function
+	vector_function = vector_function,
+	interact = interact
 }
+
