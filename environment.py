@@ -73,5 +73,5 @@ class Environment(object):
         if self.vocabsize == None:
             str = 'vocab_size'    
             msg = self.interact(str)
-            self.vocabsize = int(msg)
+            self.vocabsize = int(msg)+1+1 #1 to accomodate Null Index
         return self.vocabsize

@@ -10,15 +10,11 @@ from copy import deepcopy
 class History:
   def __init__(self, config):
     self.sequence_length = config.seq_length
-    self.history = np.zeros(
-        [self.sequence_length], dtype=np.int32)
+    self.history = None
 
   def add(self, state):
     self.history = deepcopy(state)
 
-  def reset(self):
-    self.history *= 0
-
   def get(self):
-    return self.history.tolist()
+    return self.history
       

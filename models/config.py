@@ -35,7 +35,7 @@ class Config:
         self.MAX_FRAMES = 2000000
         self.max_episode_length = 20
         self.game_dir = '../text-world'
-        self.seq_length = 30 #@Ansari check this
+        self.seq_length = 100 #@Ansari check this
         self.EVAL = 1000
         self.SAMPLE_STATES = 64
         self.device = '/cpu:0'
