@@ -3,8 +3,9 @@ zmq = require 'lzmq'
 require 'utils'
 require 'torch'
 local underscore = require 'underscore'
-local DEBUG = true
-
+local DEBUG = false
+STATE_DIM = 100
+RECURRENT = 1
 local DEFAULT_REWARD = -0.01
 local JUNK_CMD_REWARD = -0.1
 local STEP_COUNT = 0 -- count the number of steps in current episode
@@ -90,7 +91,8 @@ function interact()
 	do
 		--print("I came in while")	
 		input = socket:recv()
-		print(input)	
+		--
+		--print(input)	
 		t = mysplit(input, "#")
 		s = t[1]
 		if s == "getActions" then
@@ -107,6 +109,8 @@ function interact()
 			vector, reward, terminal = newGame()
 			msg = createStateMsg(vector, reward, terminal, available_objects) .. "#" .. available_objects_string
 			socket:send(msg)
+		elseif s == "vocab_size" then
+			socket:send(tostring(#symbols))
 		elseif s == "vector_function" then
 			socket:send("Error!!!")
 		end
@@ -178,7 +182,7 @@ function parse_game_output(text)
 	if not reward then
 		reward = DEFAULT_REWARD
 	end
-	print(text_to_agent)
+	--print(text_to_agent)
 	return text_to_agent, reward	
 end
 
@@ -351,6 +355,7 @@ end
 -- STATE_DIM = max desc/quest length
 function convert_text_to_ordered_list(input_text)
 	local NULL_INDEX = #symbols + 1
+	--print(STATE_DIM)
 	local vector = torch.ones(STATE_DIM) * NULL_INDEX
 	local REVERSE = true --reverse the order of words to have padding in beginning
 	cnt=1
@@ -402,12 +407,16 @@ function convert_text_to_ordered_list2(input_text)
 	return vector
 end
 
+
 -------------------------VECTOR function -------------------------
 if RECURRENT == 1 then
+	print (RECURRENT)
 	vector_function = convert_text_to_ordered_list
 elseif BIGRAM then
+	print (RECURRENT)
 	vector_function = convert_text_to_bigram
 else
+	print (RECURRENT)
 	vector_function = convert_text_to_bow	
 end
 -------------------------------------------------------------------
