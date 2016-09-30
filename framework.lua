@@ -66,11 +66,12 @@ function concatString(input)
 	return output
 end
 
-function createStateMsg(vector, reward, terminal)
+function createStateMsg(vector, reward, terminal, available_objects)
 	stateString = concatString(vector)
 	rewardString = tostring(reward)
 	terminalString = tostring(terminal)
-	msg = stateString .. "#" .. rewardString .. "#" .. terminalString
+	objectString = concatString(available_objects)
+	msg = stateString .. "#" .. rewardString .. "#" .. terminalString .. "#" .. objectString
 	return msg
 end
 
@@ -95,10 +96,14 @@ function interact()
 			vector, reward, terminal = step_game(tonumber(t[2]), tonumber(t[3]))
 			--print("available objects")
 			--print(available_objects) @todo: have to implement available objects inorder to play fantasy world
-			socket:send(createStateMsg(vector, reward, terminal))
+			available_objects = {}
+			for i = 1, getObjectsnumber() do available_objects[i] = i - 1 end
+			socket:send(createStateMsg(vector, reward, terminal, available_objects))
 		elseif s == "newGame" then
 			vector, reward, terminal = newGame()
-			socket:send(createStateMsg(vector, reward, terminal))
+			available_objects = {}
+			for i = 1, getObjectsnumber() do available_objects[i] = i - 1 end
+			socket:send(createStateMsg(vector, reward, terminal, available_objects))
 		elseif s == "vector_function" then
 			socket:send("Error!!!")
 		end

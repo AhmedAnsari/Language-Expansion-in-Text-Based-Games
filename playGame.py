@@ -33,25 +33,25 @@ def playgame(config,game):
         if game.START_NEW_GAME:
             episode_length = 0
             game.START_NEW_GAME = False
-            state, reward, terminal, _ = game.new_game()
+            state, reward, terminal, availableObjects = game.newGame()
             brain.history.add(state)
         action_indicator = np.zeros(actions)
         object_indicator = np.zeros(objects)
         #predict
-        action_index,object_index = brain.getAction()
+        action_index,object_index = brain.getAction(availableObjects)
         action_indicator[action_index] = 1
         object_indicator[object_index] = 1
         #act
-        nextstate,reward,terminal,percentage = game.do(action_index,object_index)
+        nextstate,reward,terminal, availableObjects = game.do(action_index,object_index)
         total_reward += reward
         episode_length += 1
         #observe
         brain.setPerception(state, reward, action_indicator, object_indicator, nextstate, terminal, False)
         nextstate = state
 #####################################################################
-        if ((terminal) or ((episode_length % config.max_episode_length) == 0)):
-            with open("quest.txt", "a") as fp:
-                print >> fp, percentage
+        # if ((terminal) or ((episode_length % config.max_episode_length) == 0)):
+        #     with open("quest.txt", "a") as fp:
+        #         print >> fp, percentage
             num_episodes += 1
             with open("reward.txt", "a") as fp:
                 print >> fp, (total_reward / (num_episodes * 1.0))    

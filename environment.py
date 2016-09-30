@@ -15,6 +15,7 @@ class Environment(object):
     def __init__(self):
         context = zmq.Context()
         self.socket = context.socket(zmq.REQ)
+        self.availableObjects = []
         self.socket.connect ("tcp://localhost:12345")
         self.START_NEW_GAME = True
         self.CURR_REWARD = 0 
@@ -34,7 +35,8 @@ class Environment(object):
         self._screen_ = [int(i) for i in msgsplit[0].split(" ")]
         self.reward = float(msgsplit[1])
         self.terminal = bool(msgsplit[2])
-        return self._screen_, self.reward, self.terminal
+        self.availableObjects = [int(i) for i in msgsplit[3].split(" ")]
+        return self._screen_, self.reward, self.terminal, self.availableObjects
 
     def interact(self, str):
         self.socket.send(str)
@@ -45,14 +47,14 @@ class Environment(object):
     def newGame(self):
         str = 'newGame'
         msg = self.interact(str)
-        self._screen_, self.reward, self.terminal = self.getScrRewTer(msg)
-        return self._screen_, self.reward, self.terminal
+        self._screen_, self.reward, self.terminal, self.availableObjects = self.getScrRewTer(msg)
+        return self._screen_, self.reward, self.terminal, self.availableObjects
 
     def step(self, action, object):
         str_ = 'step_game' + '#' + str(action+1) + '#' +str(object+1)
         msg = self.interact(str_)
-        self._screen_, self.reward, self.terminal = self.getScrRewTer(msg)
-        return self._screen_, self.reward, self.terminal
+        self._screen_, self.reward, self.terminal, self.availableObjects = self.getScrRewTer(msg)
+        return self._screen_, self.reward, self.terminal, self.availableObjects
         # self._screen_, self.reward, self.terminal, _ = self._env.step(action)         
                
     def action_size(self):
