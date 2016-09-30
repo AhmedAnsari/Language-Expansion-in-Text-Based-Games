@@ -92,12 +92,9 @@ function interact()
 		elseif s == "getObjects" then
 			socket:send(tostring(getObjectsnumber()))
 		elseif s == "step_game" then
-			vector, reward, terminal, available_objects = step_game(tonumber(t[2]), tonumber(t[3]))
-			print("available objects")
-			print(available_objects)
-			if (available_objects == nil) then
-				print("shit")
-			end
+			vector, reward, terminal = step_game(tonumber(t[2]), tonumber(t[3]))
+			--print("available objects")
+			--print(available_objects) @todo: have to implement available objects inorder to play fantasy world
 			socket:send(createStateMsg(vector, reward, terminal))
 		elseif s == "newGame" then
 			vector, reward, terminal = newGame()
@@ -173,6 +170,7 @@ function parse_game_output(text)
 	if not reward then
 		reward = DEFAULT_REWARD
 	end
+	print(text_to_agent)
 	return text_to_agent, reward	
 end
 
@@ -460,12 +458,21 @@ function getObjects()
 	return objects
 end
 
+local numactions
+local numobjects
+
 function getActionsnumber()
-	return #actions
+	if (numactions == nil) then
+		numactions = #actions
+	end
+	return numactions
 end
 
 function getObjectsnumber()
-	return #objects
+	if (numobjects==nil) then
+		numobjects = #objects
+	end
+	return numobjects
 end
 return {
 	makeSymbolMapping = makeSymbolMapping,
