@@ -25,6 +25,7 @@ class Environment(object):
         context = zmq.Context()
         # Define the socket using the "Context"
         sock = context.socket(zmq.REQ)
+        self.vocabsize = None
 
     
     def getScrRewTer(self, msg):
@@ -67,3 +68,10 @@ class Environment(object):
         str = 'getObjects'
         msg = self.interact(str)
         return int(msg)
+
+    def vocab_size(self):
+        if self.vocabsize == None:
+            str = 'vocab_size'    
+            msg = self.interact(str)
+            self.vocabsize = int(msg)
+        return self.vocabsize
