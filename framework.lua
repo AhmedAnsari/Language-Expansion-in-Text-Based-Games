@@ -1,6 +1,7 @@
 -- Layer to create quests and act as middle-man between Evennia and Agent
 zmq = require 'lzmq'
 require 'utils'
+require 'torch'
 local underscore = require 'underscore'
 local DEBUG = true
 
@@ -66,12 +67,11 @@ function concatString(input)
 	return output
 end
 
-function createStateMsg(vector, reward, terminal, available_objects)
+function createStateMsg(vector, reward, terminal)
 	stateString = concatString(vector)
 	rewardString = tostring(reward)
 	terminalString = tostring(terminal)
-	objectString = concatString(available_objects)
-	msg = stateString .. "#" .. rewardString .. "#" .. terminalString .. "#" .. objectString
+	msg = stateString .. "#" .. rewardString .. "#" .. terminalString
 	return msg
 end
 
@@ -80,7 +80,12 @@ function interact()
 	socket = ctx:socket(zmq.REP)
 	socket:bind('tcp://127.0.0.1:12345')
 	print("binding succesfully")
-
+	available_objects = torch.Tensor(getObjectsnumber())
+	for i = 1, getObjectsnumber()
+	do
+		available_objects[i] = i - 1
+	end
+	available_objects_string = concatString(available_objects)
 	while(1) 
 	do
 		--print("I came in while")	
@@ -96,14 +101,12 @@ function interact()
 			vector, reward, terminal = step_game(tonumber(t[2]), tonumber(t[3]))
 			--print("available objects")
 			--print(available_objects) @todo: have to implement available objects inorder to play fantasy world
-			available_objects = {}
-			for i = 1, getObjectsnumber() do available_objects[i] = i - 1 end
-			socket:send(createStateMsg(vector, reward, terminal, available_objects))
+			msg = createStateMsg(vector, reward, terminal) .. "#" .. available_objects_string
+			socket:send(msg)
 		elseif s == "newGame" then
 			vector, reward, terminal = newGame()
-			available_objects = {}
-			for i = 1, getObjectsnumber() do available_objects[i] = i - 1 end
-			socket:send(createStateMsg(vector, reward, terminal, available_objects))
+			msg = createStateMsg(vector, reward, terminal, available_objects) .. "#" .. available_objects_string
+			socket:send(msg)
 		elseif s == "vector_function" then
 			socket:send("Error!!!")
 		end
