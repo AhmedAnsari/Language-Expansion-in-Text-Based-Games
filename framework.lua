@@ -354,7 +354,8 @@ end
 -- assumes that the symbol mapping has already been created
 -- STATE_DIM = max desc/quest length
 function convert_text_to_ordered_list(input_text)
-	local NULL_INDEX = #symbols + 1
+	--local NULL_INDEX = #symbols + 1
+	local NULL_INDEX = 0 -- as python indices start from 0 we can accomodate NULL at 0 instead of #symbols + 1
 	--print(STATE_DIM)
 	local vector = torch.ones(STATE_DIM) * NULL_INDEX
 	local REVERSE = true --reverse the order of words to have padding in beginning
@@ -371,7 +372,7 @@ function convert_text_to_ordered_list(input_text)
 				vector[cnt2] = symbol_mapping[word]
 			else
 				print(word .. ' not in vocab')
-			end
+			end 
 			cnt=cnt+1
 		end
 	end
