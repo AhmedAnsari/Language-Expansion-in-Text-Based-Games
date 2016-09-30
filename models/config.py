@@ -11,7 +11,8 @@ class Config:
         self.summaries_dir = os.getcwd()+'/logs/'
 
         #dqn
-        self.vocab_size = self.state_dim = 100
+        # self.vocab_size = self.state_dim = 100
+        self.vocab_size = 100
         self.embed_dim = 20 #@Ansari check this
         self.rnn_size = 100 #@Ansari check this
         self.clipDelta = True
@@ -36,8 +37,6 @@ class Config:
         self.game_dir = '../text-world'
         self.seq_length = 30 #@Ansari check this
         self.EVAL = 1000
-        self.EVAL = self.STEP_SIZE
-        self.EVAL_FREQ = self.STEP_SIZE
         self.SAMPLE_STATES = 64
         self.device = '/cpu:0'
         
@@ -48,4 +47,6 @@ class Config:
     def setnumobjects(self,numobjects):
         self.num_objects = numobjects
         self.NUM_OBJECTS = numobjects
+    def setvocabsize(self,vocab_size):
+        self.vocab_size = vocab_size        
 
