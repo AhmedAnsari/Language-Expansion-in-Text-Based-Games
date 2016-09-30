@@ -10,16 +10,19 @@ import cPickle as cpickle
 from models.config import Config
 from tqdm import tqdm
 import random
-from games import HomeGame, FantasyGame
+# from games import HomeGame, FantasyGame
+from environment import Environment
 
-def playgame(config,game):
+def playgame(config):
     # Step 1: init Game
+    env = Environment()
     ###################
     # Step 2: init DQN
-    actions = len(game.actions)
-    objects = len(game.objects)
+    actions = env.action_size()
+    objects = env.object_size()
     config.setnumactions(actions)
     config.setnumobjects(objects)
+    config.setvocabsize(env.vocab_size())
 
     brain = DQN(config)
 
@@ -30,10 +33,10 @@ def playgame(config,game):
     num_episodes = 0
     total_reward = 0
     while True:
-        if game.START_NEW_GAME:
+        if env.START_NEW_GAME:
             episode_length = 0
-            game.START_NEW_GAME = False
-            state, reward, terminal, availableObjects = game.newGame()
+            env.START_NEW_GAME = False
+            state, reward, terminal, availableObjects = env.newGame()
             brain.history.add(state)
         action_indicator = np.zeros(actions)
         object_indicator = np.zeros(objects)
@@ -42,20 +45,18 @@ def playgame(config,game):
         action_indicator[action_index] = 1
         object_indicator[object_index] = 1
         #act
-        nextstate,reward,terminal, availableObjects = game.do(action_index,object_index)
+        nextstate,reward,terminal, availableObjects = env.step(action_index,object_index)
         total_reward += reward
         episode_length += 1
         #observe
         brain.setPerception(state, reward, action_indicator, object_indicator, nextstate, terminal, False)
         nextstate = state
 #####################################################################
-        # if ((terminal) or ((episode_length % config.max_episode_length) == 0)):
-        #     with open("quest.txt", "a") as fp:
-        #         print >> fp, percentage
+        if ((terminal) or ((episode_length % config.max_episode_length) == 0)):
             num_episodes += 1
-            with open("reward.txt", "a") as fp:
+            with open("train_reward.txt", "a") as fp:
                 print >> fp, (total_reward / (num_episodes * 1.0))    
-            game.START_NEW_GAME = True
+            env.START_NEW_GAME = True
 
 #####################################################################
         #for evaluating qvalues
@@ -107,8 +108,9 @@ def playgame(config,game):
 def main():
     config = Config()
  #   config.test()
-    game = HomeGame(game_dir=config.game_dir, seq_length=config.seq_length)
-    playgame(config,game)
+    # game = HomeGame(game_dir=config.game_dir, seq_length=config.seq_length)
+    # playgame(config,game)
+    playgame(config)
 
 if __name__ == '__main__':
     main()
