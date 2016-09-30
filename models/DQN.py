@@ -36,36 +36,37 @@ class DQN:
         self.stateInputT = tf.placeholder(tf.int32, [None, self.config.seq_length])
 
 
-        embed = tf.get_variable("embed", [self.config.vocab_size, self.config.embed_dim])
+        # embed = tf.get_variable("embed", [self.config.vocab_size, self.config.embed_dim]) #this is wrong way to initialize
+        embed = tf.Variable(tf.random_uniform([self.config.vocab_size, self.config.embed_dim], -1.0, 1.0),name="embed")
         # embedT = tf.get_variable("embedT", [self.config.vocab_size, self.config.embed_dim])
-
+        # print '$'*100
         word_embeds = tf.nn.embedding_lookup(embed, self.stateInput) # @codewalk: What is this line doing ?
         word_embedsT = tf.nn.embedding_lookup(embed, self.stateInputT) # @codewalk: What is this line doing ?
-
+        # print '$'*100
         self.initializer = tf.truncated_normal_initializer(stddev = 0.02)
         # self.initializer = tf.random_uniform_initializer(minval=-1.0, maxval=1.0, seed=None, dtype=tf.float32)        
         # self.initializer = tf.contrib.layers.xavier_initializer()
-
+        # print '$'*100
         self.cell = tf.nn.rnn_cell.LSTMCell(self.config.rnn_size, initializer = self.initializer)
         self.cellT = tf.nn.rnn_cell.LSTMCell(self.config.rnn_size, initializer = self.initializer)
-
+        # print '$'*100
         initial_state = self.cell.zero_state(self.config.BATCH_SIZE, tf.float32)
         initial_stateT = self.cellT.zero_state(self.config.BATCH_SIZE, tf.float32)
-
+        # print '$'*100
         # early_stop = tf.constant(self.config.seq_length, dtype = tf.int32)
-
+        # print '$'*100
         outputs, _ = tf.nn.rnn(self.cell, [tf.reshape(embed_t, [-1, self.config.embed_dim]) for embed_t in tf.split(1, self.config.seq_length, word_embeds)], dtype=tf.float32, initial_state = initial_state, scope = "LSTMN")
         outputsT, _ = tf.nn.rnn(self.cellT, [tf.reshape(embed_tT, [-1, self.config.embed_dim]) for embed_tT in tf.split(1, self.config.seq_length, word_embedsT)], dtype=tf.float32, initial_state = initial_stateT, scope = "LSTMT")
-
+        # print '$'*100
         output_embed = tf.transpose(tf.pack(outputs), [1, 0, 2])
         output_embedT = tf.transpose(tf.pack(outputsT), [1, 0, 2])
-
+        # print '$'*100
         mean_pool = tf.reduce_mean(output_embed, 1)
         mean_poolT = tf.reduce_mean(output_embedT, 1)
-
+        # print '$'*100
         linear_output = tf.nn.relu(tf.nn.rnn_cell._linear(mean_pool, int(output_embed.get_shape()[2]), 0.0, scope="linearN"))
         linear_outputT = tf.nn.relu(tf.nn.rnn_cell._linear(mean_poolT, int(output_embedT.get_shape()[2]), 0.0, scope="linearT"))
-
+        # print '$'*100
 
         self.action_value = tf.nn.rnn_cell._linear(linear_output, self.config.num_actions, 0.0, scope="actionN")
         self.action_valueT = tf.nn.rnn_cell._linear(linear_outputT, self.config.num_actions, 0.0, scope="actionT")
@@ -299,7 +300,7 @@ class DQN:
             QValue_action = self.action_value.eval(feed_dict={self.stateInput:state_batch},session = self.session)[0]
             bestAction = np.where(QValue_action == np.max(QValue_action))[0]
             QValue_object = self.object_value.eval(feed_dict={self.stateInput:state_batch},session = self.session)[0]
-            for i range(len(QValue_object)):
+            for i in range(QValue_object.size):
                 if i in availableObjects:
                     QValue_object[i] = -sys.maxint - 1
             bestObject = np.where(QValue_object == np.max(QValue_object))[0]
@@ -308,7 +309,7 @@ class DQN:
 
 
         if not evaluate:
-            self.epsilon = self.config.FINAL_EPSILON + max(0, (self.config.INITIAL_EPSILON - self.config.FINAL_EPSILON) * (self.config.EXPLORE - math.max(0, self.timeStep - self.config.REPLAY_START_SIZE))/self.config.EXPLORE)
+            self.epsilon = self.config.FINAL_EPSILON + max(0, (self.config.INITIAL_EPSILON - self.config.FINAL_EPSILON) * (self.config.EXPLORE - max(0, self.timeStep - self.config.REPLAY_START_SIZE))/self.config.EXPLORE)
 
 
         return action_index, object_index
