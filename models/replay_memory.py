@@ -6,10 +6,9 @@ Created on Fri Aug 19 17:09:18 2016
 """
 
 import random
-import numpy as np
 import cPickle as pickle
 from collections import deque
-
+import sys
 class ReplayMemory:
   def __init__(self, config):
     self.batch_size = config.batch_size
@@ -20,7 +19,7 @@ class ReplayMemory:
     self.priority_memory = deque()
     self.len_mem = 0
     self.len_prioritized_mem = 0
-
+    self.buffer_data = None
   def add(self, state, action, obj, reward, nextstate, terminal):
 
     if self.len_mem + self.len_prioritized_mem >= self.memory_size:
@@ -60,7 +59,6 @@ class ReplayMemory:
     next_state = [mem[4] for mem in batch]
     terminal = [mem[5] for mem in batch]
     return s_t, action, obj, reward, next_state, terminal
-
     
   def save_memory(self):
       fp = open(self.model_dir+'/replay_file.save','wb')

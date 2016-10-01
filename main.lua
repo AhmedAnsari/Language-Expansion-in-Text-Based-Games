@@ -4,7 +4,7 @@ require 'utils'
 
 
 
-local port = 4001
+local port = 4000 + tonumber(arg[1])
 print(port)
 client_connect(port)
 login('root', 'root')

@@ -26,7 +26,7 @@ class DQN:
         self.config = config
         
         self.memory = self.load_replay_memory(config)
-        self.history = History(config)
+        self.history = History()
         #init parameters
         self.timeStep = 0
         self.epsilon = config.INITIAL_EPSILON
@@ -136,18 +136,23 @@ class DQN:
         self.W = ["LSTMN", "linearN", "actionN", "objectN"]
         self.target_W = ["LSTMT", "linearT", "actionT", "objectT"]
 
-        for i in range(len(self.W)):
-            vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope = self.W[i])
-            varsT = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope = self.target_W[i])
+        # for i in range(len(self.W)):
+        #     vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope = self.W[i])
+        #     varsT = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope = self.target_W[i])
 
-            with tf.name_scope('activationsN'):
-                summary_list.extend(map(lambda x:tf.histogram_summary('activations/'+str(x.name), x), vars))
-            with tf.name_scope('activationsT'):
-                summary_list.extend(map(lambda x:tf.histogram_summary('activations/'+str(x.name), x), varsT))
+        #     with tf.name_scope('activationsN'):
+        #         summary_list.extend(map(lambda x:tf.histogram_summary('activations/'+str(x.name), x), vars))
+        #     with tf.name_scope('activationsT'):
+        #         summary_list.extend(map(lambda x:tf.histogram_summary('activations/'+str(x.name), x), varsT))
 
         self.summary_placeholders = {}
         self.summary_ops = {}
-        scalar_summary_tags = ['average.q_a','average.q_o']
+        if config.TUTORIAL_WORLD:
+            scalar_summary_tags = ['average.q_a','average.q_o','average_reward','average_num_pos_reward','number_of_episodes','quest1_average_reward_cnt', \
+                    'quest2_average_reward_cnt','quest3_average_reward_cnt']
+        else:
+            scalar_summary_tags = ['average.q_a','average.q_o','average_reward','average_num_pos_reward','number_of_episodes','quest1_average_reward_cnt']
+
         for tag in scalar_summary_tags:
             self.summary_placeholders[tag] = tf.placeholder('float32', None, name=tag.replace(' ', '_'))
             self.summary_ops[tag]  = tf.scalar_summary('evaluation_data/'+tag, self.summary_placeholders[tag])
@@ -190,7 +195,7 @@ class DQN:
             list_summary.append(tf.scalar_summary('sttdev/' + name, stddev))
             list_summary.append(tf.scalar_summary('max/' + name, tf.reduce_max(var)))
             list_summary.append(tf.scalar_summary('min/' + name, tf.reduce_min(var)))
-            list_summary.append(tf.histogram_summary(name, var))
+            # list_summary.append(tf.histogram_summary(name, var))
 
     def inject_summary(self, tag_dict, step):
         summary_str_lists = self.session.run([self.summary_ops[tag] for tag in tag_dict.keys()], { \

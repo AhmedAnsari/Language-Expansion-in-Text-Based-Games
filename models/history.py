@@ -5,11 +5,9 @@ Created on Fri Aug 19 17:09:18 2016
 @author: ghulamahmedansari
 """
 
-import numpy as np
 from copy import deepcopy
 class History:
-  def __init__(self, config):
-    self.sequence_length = config.seq_length
+  def __init__(self):
     self.history = None
 
   def add(self, state):
@@ -17,4 +15,7 @@ class History:
 
   def get(self):
     return self.history
+
+  def copy(self):
+    return deepcopy(self.history)
       

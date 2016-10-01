@@ -37,9 +37,12 @@ class Config:
         self.game_dir = '../text-world'
         self.seq_length = 100 #@Ansari check this
         self.EVAL = 1000
+        self.NUM_EVAL_STEPS = self.EVAL
         self.SAMPLE_STATES = 64
         self.device = '/cpu:0'
         
+
+        self.TUTORIAL_WORLD = False
     
     def setnumactions(self,numactions):
         self.num_actions = numactions
