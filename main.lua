@@ -8,9 +8,9 @@ local port = 4001
 print(port)
 client_connect(port)
 login('root', 'root')
-
+counter = arg[1]
 framework.makeSymbolMapping("../text-world/evennia/contrib/text_sims/build.ev")
 print("#symbols", #symbols)
-framework.interact()
+framework.interact(counter)
 
 

@@ -12,11 +12,11 @@ import zmq
 import sys
 
 class Environment(object):
-    def __init__(self):
+    def __init__(self,counter):
         context = zmq.Context()
         self.socket = context.socket(zmq.REQ)
         self.availableObjects = []
-        self.socket.connect ("tcp://localhost:12345")
+        self.socket.connect ("tcp://localhost:1234" + str(counter))
         self.START_NEW_GAME = True
         self.CURR_REWARD = 0 
         #for best network saving

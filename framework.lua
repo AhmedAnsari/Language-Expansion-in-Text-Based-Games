@@ -76,10 +76,10 @@ function createStateMsg(vector, reward, terminal)
 	return msg
 end
 
-function interact()
+function interact(counter)
 	ctx = zmq.init(1)
 	socket = ctx:socket(zmq.REP)
-	socket:bind('tcp://127.0.0.1:12345')
+	socket:bind('tcp://127.0.0.1:1234' .. tostring(counter))
 	print("binding succesfully")
 	available_objects = torch.Tensor(getObjectsnumber())
 	for i = 1, getObjectsnumber()
