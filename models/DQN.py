@@ -147,7 +147,7 @@ class DQN:
 
         self.summary_placeholders = {}
         self.summary_ops = {}
-        if config.TUTORIAL_WORLD:
+        if self.config.TUTORIAL_WORLD:
             scalar_summary_tags = ['average.q_a','average.q_o','average_reward','average_num_pos_reward','number_of_episodes','quest1_average_reward_cnt', \
                     'quest2_average_reward_cnt','quest3_average_reward_cnt']
         else:
@@ -266,11 +266,7 @@ class DQN:
                 })
         self.train_writer.add_summary(summary, self.timeStep)
 
-        # save network every 10000 iteration
-        if self.timeStep % 10000 == 0:
-            if not os.path.exists(os.getcwd()+'/Savednetworks'):
-                os.makedirs(os.getcwd()+'/Savednetworks')
-            self.saver.save(self.session, os.getcwd()+'/Savednetworks/'+'network' + '-dqn', global_step = self.timeStep)
+
 
         if self.timeStep % self.config.UPDATE_FREQUENCY == 0:
             # print "Copying weights."
