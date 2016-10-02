@@ -26,15 +26,15 @@ class DQN:
         #init parameters
         self.timeStep = 0
         self.epsilon = config.INITIAL_EPSILON
-        self.actions = config.NUM_ACTIONS
+
 
         self.stateInput = tf.placeholder(tf.int32, [None, self.config.seq_length])
 
 
-        embed = tf.get_variable("embed", [self.config.vocab_size, self.config.embed_dim])
+        embed = tf.Variable(tf.random_uniform([self.config.vocab_size, self.config.embed_dim], -1.0, 1.0),name="embed"))
         
 
-        word_embeds = tf.nn.embedding_lookup(embed, self.stateInput) # @codewalk: What is this line doing ?
+        word_embeds = tf.nn.embedding_lookup(embed, self.stateInput) 
         
 
         self.initializer = tf.truncated_normal_initializer(stddev = 0.02)
@@ -60,43 +60,59 @@ class DQN:
         
 
         #we calculate the Q values. For the Student Network
-        self.action_value = tf.nn.rnn_cell._linear(linear_output, self.config.num_actions, 0.0, scope="actionN")
-        self.object_value = tf.nn.rnn_cell._linear(linear_output, self.config.num_objects, 0.0, scope="objectN")
+        self.action_value_1 = tf.nn.rnn_cell._linear(linear_output, self.config.num_actions, 0.0, scope="actionN")
+        self.object_value_1 = tf.nn.rnn_cell._linear(linear_output, self.config.num_objects, 0.0, scope="objectN")
+
+        self.action_value_2 = tf.nn.rnn_cell._linear(linear_output, self.config.num_actions, 0.0, scope="actionN")
+        self.object_value_2 = tf.nn.rnn_cell._linear(linear_output, self.config.num_objects, 0.0, scope="objectN")        
+
+        self.action_value_3 = tf.nn.rnn_cell._linear(linear_output, self.config.num_actions, 0.0, scope="actionN")
+        self.object_value_3 = tf.nn.rnn_cell._linear(linear_output, self.config.num_objects, 0.0, scope="objectN")                
+
         
 
         #here we will input the teachers q value
         self.target_action_value = tf.placeholder(tf.float32, [None,self.config.seq_length])
         self.target_object_value = tf.placeholder(tf.float32, [None,self.config.seq_length])
+
         #here we calculate the probabilities for the teacher network
-        self.target_action_prob = tf.nn.softmax(tf.truediv(self.target_action_value,self.temperature))
-        self.target_object_prob = tf.nn.softmax(tf.truediv(self.target_object_value,self.temperature))
+        self.target_action_prob = tf.nn.softmax(tf.truediv(self.target_action_value,self.config.temperature))
+        self.target_object_prob = tf.nn.softmax(tf.truediv(self.target_object_value,self.config.temperature))
 
         #here we calculate the probabilities for the student network
-        self.pred_action_prob = tf.nn.softmax(self.action_value)
-        self.pred_object_prob = tf.nn.softmax(self.object_value)
+        self.pred_action_prob_1 = tf.nn.softmax(self.action_value_1)
+        self.pred_object_prob_1 = tf.nn.softmax(self.object_value_1)
+
+        self.pred_action_prob_2 = tf.nn.softmax(self.action_value_2)
+        self.pred_object_prob_2 = tf.nn.softmax(self.object_value_2)
+
+        self.pred_action_prob_3 = tf.nn.softmax(self.action_value_3)
+        self.pred_object_prob_3 = tf.nn.softmax(self.object_value_3)
 
 
-        cross_entropy_action = -tf.reduce_sum(self.target_action_prob*tf.log(self.pred_action_prob))
         entropy_action = -tf.reduce_sum(self.target_action_prob*tf.log(self.target_action_prob))
+        entropy_object = -tf.reduce_sum(self.target_object_prob*tf.log(self.target_object_prob))
 
-        cross_entropy_object = -tf.reduce_sum(self.target_object_prob*tf.log(self.pred_object_prob))
-        entropy_object = -tf.reduce_sum(self.object_action_prob*tf.log(self.target_object_prob))
+        cross_entropy_action_1 = -tf.reduce_sum(self.target_action_prob*tf.log(self.pred_action_prob_1))
+        cross_entropy_object = -tf.reduce_sum(self.target_object_prob*tf.log(self.pred_object_prob_1))
 
-        self.kl_divergence = 0.5 * (cross_entropy_action - entropy_action + cross_entropy_object - entropy_object)
+        cross_entropy_action_2 = -tf.reduce_sum(self.target_action_prob*tf.log(self.pred_action_prob_2))
+        cross_entropy_object = -tf.reduce_sum(self.target_object_prob*tf.log(self.pred_object_prob_2))
 
-        if self.config.clipDelta:
-            self.loss = tf.clip_by_norm(self.kl_divergence, 100, name='loss') #@codewalk: discuss this
+        cross_entropy_action_2 = -tf.reduce_sum(self.target_action_prob*tf.log(self.pred_action_prob_2))
+        cross_entropy_object = -tf.reduce_sum(self.target_object_prob*tf.log(self.pred_object_prob_2))
 
-        # Clipping gradients
+        
+        
 
-        self.optim_ = tf.train.RMSPropOptimizer(learning_rate = self.config.LEARNING_RATE)
-        tvars = tf.trainable_variables()
-        def ClipIfNotNone(grad,var):
-            if grad is None:
-                return grad
-            return tf.clip_by_norm(grad,20)
-        grads = [ClipIfNotNone(i,var) for i,var in zip(tf.gradients(self.loss, tvars),tvars)]
-        self.optim = self.optim_.apply_gradients(zip(grads, tvars))
+        self.kl_divergence_1 = 0.5 * (cross_entropy_action_1 - entropy_action + cross_entropy_object_1 - entropy_object)
+        self.kl_divergence_2 = 0.5 * (cross_entropy_action_2 - entropy_action + cross_entropy_object_2 - entropy_object)
+        self.kl_divergence_3 = 0.5 * (cross_entropy_action_3 - entropy_action + cross_entropy_object_3 - entropy_object)
+
+
+        self.optim_1 = tf.train.AdagradOptimizer(learning_rate = self.config.LEARNING_RATE).minimize(self.kl_divergence_1)
+        self.optim_2 = tf.train.AdagradOptimizer(learning_rate = self.config.LEARNING_RATE).minimize(self.kl_divergence_2)
+        self.optim_3 = tf.train.AdagradOptimizer(learning_rate = self.config.LEARNING_RATE).minimize(self.kl_divergence_3)
 
 
         if not(self.config.LOAD_WEIGHTS and self.load_weights()):
@@ -105,22 +121,35 @@ class DQN:
 
     def train(self):
 
-        s_t, Q_action, Q_object = self.memory.sample()
+        game_id, s_t, Q_action, Q_object = self.memory.sample()
         state_batch = s_t
         target_action_batch = Q_action
         target_object_batch = Q_object
+        if game_id == 1:
+            self.optim_1.run(feed_dict={
+                    self.target_action_value : target_action_batch,
+                    self.target_object_value : target_object_batch,
+                    self.stateInput : state_batch
+                    },session = self.session)
+        elif game_id == 2:
+            self.optim_2.run(feed_dict={
+                    self.target_action_value : target_action_batch,
+                    self.target_object_value : target_object_batch,
+                    self.stateInput : state_batch
+                    },session = self.session)
+        elif game_id == 3:
+            self.optim_3.run(feed_dict={
+                    self.target_action_value : target_action_batch,
+                    self.target_object_value : target_object_batch,
+                    self.stateInput : state_batch
+                    },session = self.session)                                
 
-        self.optim.run(feed_dict={
-                self.target_action_value : target_action_batch,
-                self.target_object_value : target_object_batch,
-                self.stateInput : state_batch
-                },session = self.session)
-
-        # save network every 10000 iteration
-        if self.timeStep % 10000 == 0:
-            if not os.path.exists(os.getcwd()+'/Savednetworks'):
-                os.makedirs(os.getcwd()+'/Savednetworks')
-            self.saver.save(self.session, os.getcwd()+'/Savednetworks/'+'network' + '-dqn', global_step = self.timeStep)
+#SEE NETWORK SAVING PART
+        # # save network every 10000 iteration
+        # if self.timeStep % 10000 == 0:
+        #     if not os.path.exists(os.getcwd()+'/Savednetworks'):
+        #         os.makedirs(os.getcwd()+'/Savednetworks')
+        #     self.saver.save(self.session, os.getcwd()+'/Savednetworks/'+'network' + '-dqn', global_step = self.timeStep)
 
     
     def load_weights(self):
