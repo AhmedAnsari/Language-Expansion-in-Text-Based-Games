@@ -20,6 +20,7 @@ function data_in_smallworld()
 		msg, err = client:receive()
 	end
 	sleep(0.0005)	-- Do NOT overpower the server.
+	-- print("CLIENT:OUTPUT  " .. tostring(msg))
 	return text
 end
 
@@ -43,5 +44,6 @@ end
 
 -- Send data to Evennia
 function data_out(data)
+	-- print("CLIENT:INPUT  " .. tostring(data))
 	client:send(data .. '\n')
 end

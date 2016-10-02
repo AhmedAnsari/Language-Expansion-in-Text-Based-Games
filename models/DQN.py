@@ -30,7 +30,6 @@ class DQN:
         #init parameters
         self.timeStep = 0
         self.epsilon = config.INITIAL_EPSILON
-        self.actions = config.NUM_ACTIONS
 
         self.stateInput = tf.placeholder(tf.int32, [None, self.config.seq_length])
         self.stateInputT = tf.placeholder(tf.int32, [None, self.config.seq_length])

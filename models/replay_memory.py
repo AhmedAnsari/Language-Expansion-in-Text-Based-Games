@@ -19,19 +19,27 @@ class ReplayMemory:
     self.priority_memory = deque()
     self.len_mem = 0
     self.len_prioritized_mem = 0
-    self.buffer_data = None
+  
   def add(self, state, action, obj, reward, nextstate, terminal):
 
     if self.len_mem + self.len_prioritized_mem >= self.memory_size:
-      pop1 = self.priority_memory[0][6]
-      pop2 = self.memory[0][6]
+      if self.len_mem > 0 and self.len_prioritized_mem > 0:
+          pop1 = self.priority_memory[0][6]
+          pop2 = self.memory[0][6]
 
-      if pop1 < pop2:
+          if pop1 < pop2:
+            self.priority_memory.popleft()
+            self.len_prioritized_mem -= 1
+          else:
+            self.memory.popleft()
+            self.len_mem -= 1
+      elif self.len_mem == 0:
         self.priority_memory.popleft()
         self.len_prioritized_mem -= 1
-      else:
+      else:        
         self.memory.popleft()
         self.len_mem -= 1
+
 
 
     if reward > 0:
