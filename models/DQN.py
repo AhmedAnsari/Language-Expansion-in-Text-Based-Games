@@ -255,16 +255,23 @@ class DQN:
                 target_action_batch.append(reward_batch[i] + self.config.GAMMA* np.max(QValue_action_batch[i]))
                 target_object_batch.append(reward_batch[i] + self.config.GAMMA* np.max(QValue_object_batch[i]))
 
-        
-        _ , summary = self.session.run([self.optim, self.merged],feed_dict={
-                self.target_action_value : target_action_batch,
-                self.target_object_value : target_object_batch,
-                self.action_indicator : action_batch,
-                self.object_indicator : obj_batch,
-                self.stateInput : state_batch
-                })
-        self.train_writer.add_summary(summary, self.timeStep)
-
+        if self.timeStep%self.config.EVAL == 1:
+            _ , summary = self.session.run([self.optim, self.merged],feed_dict={
+                    self.target_action_value : target_action_batch,
+                    self.target_object_value : target_object_batch,
+                    self.action_indicator : action_batch,
+                    self.object_indicator : obj_batch,
+                    self.stateInput : state_batch
+                    })
+            self.train_writer.add_summary(summary, self.timeStep)
+        else:
+            _ = self.session.run([self.optim],feed_dict={
+                    self.target_action_value : target_action_batch,
+                    self.target_object_value : target_object_batch,
+                    self.action_indicator : action_batch,
+                    self.object_indicator : obj_batch,
+                    self.stateInput : state_batch
+                    })
 
 
         if self.timeStep % self.config.UPDATE_FREQUENCY == 0:
