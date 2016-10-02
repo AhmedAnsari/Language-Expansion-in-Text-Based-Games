@@ -35,7 +35,11 @@ class Environment(object):
         # print msgsplit[2]
         self._screen_ = [int(i) for i in msgsplit[0].split(" ")]
         self.reward = float(msgsplit[1])
-        self.terminal = bool(msgsplit[2])
+        # print "DEBUG::" + str(msgsplit[2])
+        if msgsplit[2] == "true":
+            self.terminal = True
+        else:
+            self.terminal = False
         self.availableObjects = [int(i) for i in msgsplit[3].split(" ")]
         return self._screen_, self.reward, self.terminal, self.availableObjects
 
