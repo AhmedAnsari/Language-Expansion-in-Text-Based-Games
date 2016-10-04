@@ -23,17 +23,17 @@ class Config:
         self.LEARNING_RATE = 0.0005
         # self.GRADIENT_MOMENTUM = 0.95
         # self.SQUARED_GRADIENT_MOMENTUM = 0.95
-        self.UPDATE_FREQUENCY = 10000 # Number of parameter updates after which the target parameters are updated
+        self.UPDATE_FREQUENCY = 1000 # Number of parameter updates after which the target parameters are updated
         self.LOAD_WEIGHTS = False
         self.REPLAY_START_SIZE = 1000 #minimum number of previous transitions to be stored before training starts
         self.INITIAL_EPSILON = 1 # starting value of epsilon
         self.FINAL_EPSILON = 0.2 # final value of epsilon
         self.trainfreq = 4
-        self.EXPLORE =  200000# frames over which to anneal epsilon
+        self.EXPLORE =  100000# frames over which to anneal epsilon
 
         #parameters for the game
         self.MAX_FRAMES = 2000000
-        self.max_episode_length = 20
+        self.max_episode_length = 30
         self.game_dir = '../text-world'
         self.seq_length = 100 #@Ansari check this
         self.EVAL = 1000
