@@ -188,12 +188,12 @@ class DQN:
         """Attach a lot of summaries to a Tensor."""
         with tf.name_scope('summaries'):
             mean = tf.reduce_mean(var)
-            list_summary.append(tf.scalar_summary('mean/' + name, mean))
-            with tf.name_scope('stddev'):
-                stddev = tf.sqrt(tf.reduce_sum(tf.square(var - mean)))
-            list_summary.append(tf.scalar_summary('sttdev/' + name, stddev))
-            list_summary.append(tf.scalar_summary('max/' + name, tf.reduce_max(var)))
-            list_summary.append(tf.scalar_summary('min/' + name, tf.reduce_min(var)))
+            list_summary.append(tf.scalar_summary('training_data/mean/' + name, mean))
+            # with tf.name_scope('stddev'):
+            #     stddev = tf.sqrt(tf.reduce_sum(tf.square(var - mean)))
+            # list_summary.append(tf.scalar_summary('training_data/sttdev/' + name, stddev))
+            list_summary.append(tf.scalar_summary('training_data/max/' + name, tf.reduce_max(var)))
+            list_summary.append(tf.scalar_summary('training_data/min/' + name, tf.reduce_min(var)))
             # list_summary.append(tf.histogram_summary(name, var))
 
     def inject_summary(self, tag_dict, step):
