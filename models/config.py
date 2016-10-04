@@ -43,6 +43,7 @@ class Config:
         
 
         self.TUTORIAL_WORLD = False
+        self.game_num = 1
     
     def setnumactions(self,numactions):
         self.num_actions = numactions

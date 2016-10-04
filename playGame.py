@@ -10,7 +10,7 @@ import cPickle as cpickle
 from models.config import Config
 from tqdm import tqdm
 import random
-# from games import HomeGame, FantasyGame
+import sys
 from environment import Environment
 
 def evaluate(brain,env,config):
@@ -75,7 +75,7 @@ def evaluate(brain,env,config):
     total_reward /= (nepisodes*1.0)
     quest1_reward_cnt /= (nepisodes*1.0)
     nrewards /= (nepisodes*1.0)
-
+    env.START_NEW_GAME = True
     if config.TUTORIAL_WORLD:
         quest2_reward_cnt /= (nepisodes*1.0)
         quest3_reward_cnt /= (nepisodes*1.0)
@@ -85,7 +85,7 @@ def evaluate(brain,env,config):
 
 def playgame(config):
     # Step 1: init Game
-    env = Environment(1) #1 is for main game 2 is for evaluation
+    env = Environment(config.game_num) #1 is for main game 2 is for evaluation
     ###################
     # Step 2: init DQN
     actions = env.action_size()
@@ -156,11 +156,11 @@ def playgame(config):
                 print >>fp,avgEvalQValues_o
 #####################################################################
             #save current history before starting evaluation
-            temp_history_data = brain.history.copy()
+            # temp_history_data = brain.history.copy()
             #now let us evaluate avg reward                        
             #create alternate environment for EVALUATION
-            env_eval = Environment(2)
-
+            # env_eval = Environment(2)
+            env_eval = env
             if config.TUTORIAL_WORLD:
                 total_reward, nrewards, nepisodes, quest1_reward_cnt, quest2_reward_cnt, quest3_reward_cnt = evaluate(brain, env_eval, config)
             else:
@@ -179,7 +179,7 @@ def playgame(config):
             env_eval.reward_history.append(total_reward) #doing this for keeping track of best network    
             
             #go back to saved frame after evaluation completed
-            brain.history.add(temp_history_data)
+            # brain.history.add(temp_history_data)
 #####################################################################
             if config.TUTORIAL_WORLD:
                 brain.inject_summary({
@@ -214,6 +214,7 @@ def playgame(config):
 def main():
     config = Config()
  #   config.test()
+    config.game_num = sys.argv[1]
     playgame(config)
 
 if __name__ == '__main__':

@@ -65,7 +65,6 @@ class Environment(object):
     def action_size(self):
         str = 'getActions'
         msg = self.interact(str)
-        print msg
         return int(msg)
             
     def object_size(self):
