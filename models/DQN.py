@@ -176,7 +176,7 @@ class DQN:
         if not(self.config.LOAD_WEIGHTS and self.load_weights()):
             # self.merged = tf.merge_all_summaries()
             self.merged = tf.merge_summary(summary_list)
-            self.train_writer = tf.train.SummaryWriter(self.config.summaries_dir + '/train',self.session.graph)            
+            self.train_writer = tf.train.SummaryWriter(self.config.summaries_dir + '/train/'+str(self.config.game_num),self.session.graph)            
             self.session.run(tf.initialize_all_variables())
 
 
