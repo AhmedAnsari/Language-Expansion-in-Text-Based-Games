@@ -46,8 +46,8 @@ class DQN:
         # self.initializer = tf.random_uniform_initializer(minval=-1.0, maxval=1.0, seed=None, dtype=tf.float32)        
         # self.initializer = tf.contrib.layers.xavier_initializer()
         # print '$'*100
-        self.cell = tf.nn.rnn_cell.LSTMCell(self.config.rnn_size, initializer = self.initializer)
-        self.cellT = tf.nn.rnn_cell.LSTMCell(self.config.rnn_size, initializer = self.initializer)
+        self.cell = tf.nn.rnn_cell.LSTMCell(self.config.rnn_size, initializer = self.initializer, state_is_tuple=True)
+        self.cellT = tf.nn.rnn_cell.LSTMCell(self.config.rnn_size, initializer = self.initializer, state_is_tuple=True)
         # print '$'*100
         initial_state = self.cell.zero_state(self.config.BATCH_SIZE, tf.float32)
         initial_stateT = self.cellT.zero_state(self.config.BATCH_SIZE, tf.float32)
@@ -172,7 +172,7 @@ class DQN:
         # self.optim = tf.train.AdagradOptimizer(learning_rate = self.config.LEARNING_RATE).minimize(self.loss)
         # self.optim_a = tf.train.AdagradOptimizer(learning_rate = self.config.LEARNING_RATE).minimize(self.loss_a)
         # self.optim_o = tf.train.AdagradOptimizer(learning_rate = self.config.LEARNING_RATE).minimize(self.loss_o)
-        self.optim = tf.train.AdagradOptimizer(learning_rate = self.config.LEARNING_RATE).minimize(self.loss_o + self.loss_a )
+        self.optim = tf.train.AdamOptimizer(learning_rate = self.config.LEARNING_RATE).minimize(self.loss_o + self.loss_a )
         if not(self.config.LOAD_WEIGHTS and self.load_weights()):
             # self.merged = tf.merge_all_summaries()
             self.merged = tf.merge_summary(summary_list)
@@ -255,7 +255,8 @@ class DQN:
                 target_action_batch.append(reward_batch[i] + self.config.GAMMA* np.max(QValue_action_batch[i]))
                 target_object_batch.append(reward_batch[i] + self.config.GAMMA* np.max(QValue_object_batch[i]))
 
-        if self.timeStep%self.config.EVAL == 1:
+        if self.timeStep%self.config.EVAL == self.config.trainfreq:
+            print "doing this time:"
             _ , summary = self.session.run([self.optim, self.merged],feed_dict={
                     self.target_action_value : target_action_batch,
                     self.target_object_value : target_object_batch,
