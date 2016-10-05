@@ -63,15 +63,15 @@ class DQN:
         mean_pool = tf.reduce_mean(output_embed, 1)
         mean_poolT = tf.reduce_mean(output_embedT, 1)
         # print '$'*100
-        linear_output = tf.nn.relu(tf.nn.rnn_cell._linear(mean_pool, int(output_embed.get_shape()[2]), 0.0, scope="linearN"))
-        linear_outputT = tf.nn.relu(tf.nn.rnn_cell._linear(mean_poolT, int(output_embedT.get_shape()[2]), 0.0, scope="linearT"))
+        linear_output = tf.nn.relu(tf.nn.rnn_cell._linear(mean_pool, int(output_embed.get_shape()[2]), 1,0.01, scope="linearN"))
+        linear_outputT = tf.nn.relu(tf.nn.rnn_cell._linear(mean_poolT, int(output_embedT.get_shape()[2]),1, 0.01, scope="linearT"))
         # print '$'*100
 
-        self.action_value = tf.nn.rnn_cell._linear(linear_output, self.config.num_actions, 0.0, scope="actionN")
-        self.action_valueT = tf.nn.rnn_cell._linear(linear_outputT, self.config.num_actions, 0.0, scope="actionT")
+        self.action_value = tf.nn.rnn_cell._linear(linear_output, self.config.num_actions, 1,0.01, scope="actionN")
+        self.action_valueT = tf.nn.rnn_cell._linear(linear_outputT, self.config.num_actions, 1,0.01, scope="actionT")
 
-        self.object_value = tf.nn.rnn_cell._linear(linear_output, self.config.num_objects, 0.0, scope="objectN")
-        self.object_valueT = tf.nn.rnn_cell._linear(linear_outputT, self.config.num_objects, 0.0, scope="objectT")
+        self.object_value = tf.nn.rnn_cell._linear(linear_output, self.config.num_objects, 1,0.01, scope="objectN")
+        self.object_valueT = tf.nn.rnn_cell._linear(linear_outputT, self.config.num_objects, 1,0.01, scope="objectT")
 
         self.target_action_value = tf.placeholder(tf.float32, [None])
         self.target_object_value = tf.placeholder(tf.float32, [None])
