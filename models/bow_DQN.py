@@ -31,47 +31,48 @@ class DQN:
         self.timeStep = 0
         self.epsilon = config.INITIAL_EPSILON
 
-        self.stateInput = tf.placeholder(tf.int32, [None, self.config.seq_length])
-        self.stateInputT = tf.placeholder(tf.int32, [None, self.config.seq_length])
+        self.stateInput = tf.placeholder(tf.float32, [None, self.config.state_dim])
+        self.stateInputT = tf.placeholder(tf.float32, [None, self.config.state_dim])
 
 
-        # embed = tf.get_variable("embed", [self.config.vocab_size, self.config.embed_dim]) #this is wrong way to initialize
-        embed = tf.Variable(tf.random_uniform([self.config.vocab_size, self.config.embed_dim], -1.0, 1.0),name="embed")
-        # embedT = tf.get_variable("embedT", [self.config.vocab_size, self.config.embed_dim])
-        # print '$'*100
-        word_embeds = tf.nn.embedding_lookup(embed, self.stateInput) # @codewalk: What is this line doing ?
-        word_embedsT = tf.nn.embedding_lookup(embed, self.stateInputT) # @codewalk: What is this line doing ?
-        # print '$'*100
-        self.initializer = tf.truncated_normal_initializer(stddev = 0.02)
-        # self.initializer = tf.random_uniform_initializer(minval=-1.0, maxval=1.0, seed=None, dtype=tf.float32)        
-        # self.initializer = tf.contrib.layers.xavier_initializer()
-        # print '$'*100
-        self.cell = tf.nn.rnn_cell.LSTMCell(self.config.rnn_size, initializer = self.initializer, state_is_tuple=True)
-        self.cellT = tf.nn.rnn_cell.LSTMCell(self.config.rnn_size, initializer = self.initializer, state_is_tuple=True)
-        # print '$'*100
-        initial_state = self.cell.zero_state(self.config.BATCH_SIZE, tf.float32)
-        initial_stateT = self.cellT.zero_state(self.config.BATCH_SIZE, tf.float32)
-        # print '$'*100
-        # early_stop = tf.constant(self.config.seq_length, dtype = tf.int32)
-        # print '$'*100
-        outputs, _ = tf.nn.rnn(self.cell, [tf.reshape(embed_t, [-1, self.config.embed_dim]) for embed_t in tf.split(1, self.config.seq_length, word_embeds)], dtype=tf.float32, initial_state = initial_state, scope = "LSTMN")
-        outputsT, _ = tf.nn.rnn(self.cellT, [tf.reshape(embed_tT, [-1, self.config.embed_dim]) for embed_tT in tf.split(1, self.config.seq_length, word_embedsT)], dtype=tf.float32, initial_state = initial_stateT, scope = "LSTMT")
-        # print '$'*100
-        output_embed = tf.transpose(tf.pack(outputs), [1, 0, 2])
-        output_embedT = tf.transpose(tf.pack(outputsT), [1, 0, 2])
-        # print '$'*100
-        mean_pool = tf.reduce_mean(output_embed, 1)
-        mean_poolT = tf.reduce_mean(output_embedT, 1)
-        # print '$'*100
-        linear_output = tf.nn.relu(tf.nn.rnn_cell._linear(mean_pool, int(output_embed.get_shape()[2]), 1,0.01, scope="linearN"))
-        linear_outputT = tf.nn.relu(tf.nn.rnn_cell._linear(mean_poolT, int(output_embedT.get_shape()[2]),1, 0.01, scope="linearT"))
-        # print '$'*100
+        with tf.variable_scope("Nfcc1"):
+            W_fc1, b_fc1 = self.linear_weight_variable([self.config.state_dim,100])        
+        with tf.variable_scope("Tfcc1"):
+            W_fc1T, b_fc1T = self.linear_weight_variable([self.config.state_dim,100])                    
 
-        self.action_value = tf.nn.rnn_cell._linear(linear_output, self.config.num_actions, 1,0.01, scope="actionN")
-        self.action_valueT = tf.nn.rnn_cell._linear(linear_outputT, self.config.num_actions, 1,0.01, scope="actionT")
+        mean_pool = tf.matmul(self.stateInput,W_fc1)+b_fc1
+        mean_poolT = tf.matmul(self.stateInputT,W_fc1T)+b_fc1T
 
-        self.object_value = tf.nn.rnn_cell._linear(linear_output, self.config.num_objects, 1,0.01, scope="objectN")
-        self.object_valueT = tf.nn.rnn_cell._linear(linear_outputT, self.config.num_objects, 1,0.01, scope="objectT")
+        linear_output1 = tf.nn.relu(mean_pool)
+        linear_outputT1 = tf.nn.relu(mean_poolT)
+
+        with tf.variable_scope("Nfcc2"):
+            W_fc2, b_fc2 = self.linear_weight_variable([100,100])        
+        with tf.variable_scope("Tfcc2"):
+            W_fc2T, b_fc2T = self.linear_weight_variable([100,100])                    
+
+        mean_pool2 = tf.matmul(linear_output1,W_fc2)+b_fc2
+        mean_poolT2 = tf.matmul(linear_outputT1,W_fc2T)+b_fc2T        
+        # print '$'*100
+        linear_output = tf.nn.relu(mean_pool2)
+        linear_outputT = tf.nn.relu(mean_poolT2)
+        # print '$'*100
+        with tf.variable_scope("Nfcc2_a"):
+            W_fc2_a, b_fc2_a = self.linear_weight_variable([100,self.config.num_actions])       
+        with tf.variable_scope("Tfcc2_a"):
+            W_fc2_aT, b_fc2_aT = self.linear_weight_variable([100,self.config.num_actions])         
+
+        with tf.variable_scope("Nfcc2_o"):
+            W_fc2_o, b_fc2_o = self.linear_weight_variable([100,self.config.num_objects])
+        with tf.variable_scope("Tfcc2_o"):
+            W_fc2_oT, b_fc2_oT = self.linear_weight_variable([100,self.config.num_objects])            
+
+        self.action_value = tf.matmul(linear_output,W_fc2_a)+b_fc2_a
+        self.action_valueT = tf.matmul(linear_outputT,W_fc2_aT)+b_fc2_aT
+
+        self.object_value = tf.matmul(linear_output,W_fc2_o)+b_fc2_o
+        self.object_valueT = tf.matmul(linear_outputT,W_fc2_oT)+b_fc2_oT
+
 
         self.target_action_value = tf.placeholder(tf.float32, [None])
         self.target_object_value = tf.placeholder(tf.float32, [None])
@@ -104,7 +105,7 @@ class DQN:
                     
                     self.quadratic_part_o = tf.minimum(abs(self.delta_o), config.maxDelta)
                     self.linear_part_o = abs(self.delta_o) - self.quadratic_part_o
-                    print self.quadratic_part_a.get_shape()
+
                     self.quadratic_part = tf.concat(0,[self.quadratic_part_a,self.quadratic_part_o])
                     self.linear_part = tf.concat(0,[self.linear_part_a,self.linear_part_o])
 
@@ -137,8 +138,8 @@ class DQN:
             self.loss = tf.reduce_mean(0.5*tf.square(self.quadratic_part) + config.clipDelta * self.linear_part, name='loss')  
             self.variable_summaries(self.loss, 'loss',summary_list)            
 
-        self.W = ["LSTMN", "linearN", "actionN", "objectN"]
-        self.target_W = ["LSTMT", "linearT", "actionT", "objectT"]
+        self.W = ["Nfcc"]
+        self.target_W = ["Tfcc"]
 
         # for i in range(len(self.W)):
         #     vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope = self.W[i])
@@ -214,10 +215,10 @@ class DQN:
             vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope = self.W[i])
             varsT = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope = self.target_W[i])
             # for i in vars:
-            # 	print i.name
+            #   print i.name
             # print "Over ."
             # for i in varsT:
-            # 	print i.name
+            #   print i.name
             # print len(vars)
             # print len(varsT)
             copy_op = zip(varsT, vars)
@@ -231,8 +232,8 @@ class DQN:
             # print len(value2)
             # val_op = zip(value1, value2)
             # for x, y in val_op:
-            # 	res = x - y
-            # 	print sum(res)
+            #   res = x - y
+            #   print sum(res)
 
 
 
@@ -263,6 +264,7 @@ class DQN:
                 target_object_batch.append(reward_batch[i] + self.config.GAMMA* np.max(QValue_object_batch[i]))
 
         if self.timeStep%self.config.EVAL == self.config.trainfreq:
+
             _ , summary = self.session.run([self.optim, self.merged],feed_dict={
                     self.target_action_value : target_action_batch,
                     self.target_object_value : target_object_batch,
@@ -308,7 +310,7 @@ class DQN:
         if self.timeStep > self.config.REPLAY_START_SIZE and self.memory.count > self.config.REPLAY_START_SIZE:
             # Train the network
             if (not evaluate ) and (self.timeStep % self.config.trainfreq == 0):
-            	# print "Started Training."
+                # print "Started Training."
                 self.train()
         if not evaluate:
             self.timeStep += 1
@@ -325,7 +327,7 @@ class DQN:
             action_index = random.randrange(self.config.num_actions)
             object_index = random.randrange(self.config.num_objects)
         else:
-            state_batch = np.zeros([self.config.batch_size, self.config.seq_length])
+            state_batch = np.zeros([self.config.batch_size, self.config.state_dim])
             state_batch[0] = self.history.get()
             QValue_action = self.action_value.eval(feed_dict={self.stateInput:state_batch},session = self.session)[0]
             bestAction = np.where(QValue_action == np.max(QValue_action))[0]
@@ -366,5 +368,9 @@ class DQN:
         else:
             memory = ReplayMemory(config)
         return memory
+
+    def linear_weight_variable(self, shape):
+        return tf.get_variable('w_linear', shape, tf.float32, initializer=tf.truncated_normal_initializer(stddev=0.02)), \
+           tf.get_variable('biases', shape[1], initializer=tf.truncated_normal_initializer(stddev=0.01))        
           
 

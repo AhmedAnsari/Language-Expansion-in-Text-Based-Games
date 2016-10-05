@@ -11,7 +11,8 @@ class Config:
         self.summaries_dir = os.getcwd()+'/logs/'
 
         #dqn
-        # self.vocab_size = self.state_dim = 100
+        # self.vocab_size = 
+        self.state_dim = 85 #used for for bow case
         self.vocab_size = 100
         self.embed_dim = 20 #@Ansari check this
         self.rnn_size = 100 #@Ansari check this

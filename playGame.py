@@ -4,7 +4,8 @@
 # -------------------------
 
 import os
-from models.DQN import DQN
+# from models.DQN import DQN
+from models.bow_DQN import DQN
 import numpy as np
 import cPickle as cpickle
 from models.config import Config

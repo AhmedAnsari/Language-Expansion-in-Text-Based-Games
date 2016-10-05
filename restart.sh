@@ -1,5 +1,6 @@
 #!/bin/bash
 echo "Removing required files"
-rm reward.txt quest.txt
+rm *.txt
 rm -r Savednetworks
-
+rm -rf logs
+rm *pyc
