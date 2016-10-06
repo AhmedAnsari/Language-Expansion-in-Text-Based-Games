@@ -45,6 +45,9 @@ class Config:
 
         self.TUTORIAL_WORLD = False
         self.game_num = 1
+
+        
+        self.temperature =0.01
     
     def setnumactions(self,numactions):
         self.num_actions = numactions

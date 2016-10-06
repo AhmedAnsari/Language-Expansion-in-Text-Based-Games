@@ -14,66 +14,44 @@ from history import History
 from replay_memory import ReplayMemory
 import cPickle as pickle
 
-class DQN:
+class student:
     def __init__(self, config):
 
         #init replay memory
         self.session = tf.Session()
         self.config = config
-        
-        self.memory = self.load_replay_memory(config)
-        self.history = History(config)
         #init parameters
         self.timeStep = 0
-        self.epsilon = config.INITIAL_EPSILON
-
-
         self.stateInput = tf.placeholder(tf.int32, [None, self.config.seq_length])
-
+        self.data = {}
+        self.history = History()
 
         embed = tf.Variable(tf.random_uniform([self.config.vocab_size, self.config.embed_dim], -1.0, 1.0),name="embed"))
-        
-
         word_embeds = tf.nn.embedding_lookup(embed, self.stateInput) 
-        
-
         self.initializer = tf.truncated_normal_initializer(stddev = 0.02)
-
         self.cell = tf.nn.rnn_cell.LSTMCell(self.config.rnn_size, initializer = self.initializer)
-        
-
         initial_state = self.cell.zero_state(self.config.BATCH_SIZE, tf.float32)
-        
-
-        # early_stop = tf.constant(self.config.seq_length, dtype = tf.int32)
-
         outputs, _ = tf.nn.rnn(self.cell, [tf.reshape(embed_t, [-1, self.config.embed_dim]) for embed_t in tf.split(1, self.config.seq_length, word_embeds)], dtype=tf.float32, initial_state = initial_state, scope = "LSTMN")
-        
-
         output_embed = tf.transpose(tf.pack(outputs), [1, 0, 2])
-        
-
         mean_pool = tf.nn.relu(tf.reduce_mean(output_embed, 1))
-        
-
-        linear_output = tf.nn.relu(tf.nn.rnn_cell._linear(mean_pool, int(output_embed.get_shape()[2]), 0.0, scope="linearN"))
+        linear_output = tf.nn.relu(tf.nn.rnn_cell._linear(mean_pool, int(output_embed.get_shape()[2]), 1.0, 0.01, scope="linearN"))
         
 
         #we calculate the Q values. For the Student Network
-        self.action_value_1 = tf.nn.rnn_cell._linear(linear_output, self.config.num_actions, 0.0, scope="actionN")
-        self.object_value_1 = tf.nn.rnn_cell._linear(linear_output, self.config.num_objects, 0.0, scope="objectN")
+        self.action_value_1 = tf.nn.rnn_cell._linear(linear_output, self.config.num_actions, 1.0, 0.01, scope="actionN")
+        self.object_value_1 = tf.nn.rnn_cell._linear(linear_output, self.config.num_objects, 1.0, 0.01, scope="objectN")
 
-        self.action_value_2 = tf.nn.rnn_cell._linear(linear_output, self.config.num_actions, 0.0, scope="actionN")
-        self.object_value_2 = tf.nn.rnn_cell._linear(linear_output, self.config.num_objects, 0.0, scope="objectN")        
+        self.action_value_2 = tf.nn.rnn_cell._linear(linear_output, self.config.num_actions, 1.0, 0.01, scope="actionN")
+        self.object_value_2 = tf.nn.rnn_cell._linear(linear_output, self.config.num_objects, 1.0, 0.01 scope="objectN")        
 
-        self.action_value_3 = tf.nn.rnn_cell._linear(linear_output, self.config.num_actions, 0.0, scope="actionN")
-        self.object_value_3 = tf.nn.rnn_cell._linear(linear_output, self.config.num_objects, 0.0, scope="objectN")                
+        self.action_value_3 = tf.nn.rnn_cell._linear(linear_output, self.config.num_actions, 1.0, 0.01, scope="actionN")
+        self.object_value_3 = tf.nn.rnn_cell._linear(linear_output, self.config.num_objects, 1.0, 0.01, scope="objectN")                
 
         
 
         #here we will input the teachers q value
-        self.target_action_value = tf.placeholder(tf.float32, [None,self.config.seq_length])
-        self.target_object_value = tf.placeholder(tf.float32, [None,self.config.seq_length])
+        self.target_action_value = tf.placeholder(tf.float32, [None,self.config.num_actions])
+        self.target_object_value = tf.placeholder(tf.float32, [None,self.config.num_objects])
 
         #here we calculate the probabilities for the teacher network
         self.target_action_prob = tf.nn.softmax(tf.truediv(self.target_action_value,self.config.temperature))
@@ -90,38 +68,60 @@ class DQN:
         self.pred_object_prob_3 = tf.nn.softmax(self.object_value_3)
 
 
-        entropy_action = -tf.reduce_sum(self.target_action_prob*tf.log(self.target_action_prob))
-        entropy_object = -tf.reduce_sum(self.target_object_prob*tf.log(self.target_object_prob))
+        entropy_action = -tf.reduce_sum(self.target_action_prob*tf.log(self.target_action_prob),reduction_indices = [1])
+        entropy_object = -tf.reduce_sum(self.target_object_prob*tf.log(self.target_object_prob),reduction_indices = [1])
 
-        cross_entropy_action_1 = -tf.reduce_sum(self.target_action_prob*tf.log(self.pred_action_prob_1))
-        cross_entropy_object = -tf.reduce_sum(self.target_object_prob*tf.log(self.pred_object_prob_1))
+        cross_entropy_action_1 = -tf.reduce_sum(self.target_action_prob*tf.log(self.pred_action_prob_1),reduction_indices = [1])
+        cross_entropy_object_1 = -tf.reduce_sum(self.target_object_prob*tf.log(self.pred_object_prob_1),reduction_indices = [1])
 
-        cross_entropy_action_2 = -tf.reduce_sum(self.target_action_prob*tf.log(self.pred_action_prob_2))
-        cross_entropy_object = -tf.reduce_sum(self.target_object_prob*tf.log(self.pred_object_prob_2))
+        cross_entropy_action_2 = -tf.reduce_sum(self.target_action_prob*tf.log(self.pred_action_prob_2),reduction_indices = [1])
+        cross_entropy_object_2= -tf.reduce_sum(self.target_object_prob*tf.log(self.pred_object_prob_2),reduction_indices = [1])
 
-        cross_entropy_action_2 = -tf.reduce_sum(self.target_action_prob*tf.log(self.pred_action_prob_2))
-        cross_entropy_object = -tf.reduce_sum(self.target_object_prob*tf.log(self.pred_object_prob_2))
+        cross_entropy_action_3 = -tf.reduce_sum(self.target_action_prob*tf.log(self.pred_action_prob_3),reduction_indices = [1])
+        cross_entropy_object_3= -tf.reduce_sum(self.target_object_prob*tf.log(self.pred_object_prob_3),reduction_indices = [1])
 
         
         
 
-        self.kl_divergence_1 = 0.5 * (cross_entropy_action_1 - entropy_action + cross_entropy_object_1 - entropy_object)
-        self.kl_divergence_2 = 0.5 * (cross_entropy_action_2 - entropy_action + cross_entropy_object_2 - entropy_object)
-        self.kl_divergence_3 = 0.5 * (cross_entropy_action_3 - entropy_action + cross_entropy_object_3 - entropy_object)
+        self.kl_divergence_1 = tf.reduce_mean(0.5 * (cross_entropy_action_1 - entropy_action + cross_entropy_object_1 - entropy_object))
+
+        self.kl_divergence_2 = tf.reduce_mean(0.5 * (cross_entropy_action_2 - entropy_action + cross_entropy_object_2 - entropy_object))
+
+        self.kl_divergence_3 = tf.reduce_mean(0.5 * (cross_entropy_action_3 - entropy_action + cross_entropy_object_3 - entropy_object))
 
 
-        self.optim_1 = tf.train.AdagradOptimizer(learning_rate = self.config.LEARNING_RATE).minimize(self.kl_divergence_1)
-        self.optim_2 = tf.train.AdagradOptimizer(learning_rate = self.config.LEARNING_RATE).minimize(self.kl_divergence_2)
-        self.optim_3 = tf.train.AdagradOptimizer(learning_rate = self.config.LEARNING_RATE).minimize(self.kl_divergence_3)
+
+        self.optim_1 = tf.train.AdamOptimizer(learning_rate = self.config.LEARNING_RATE).minimize(self.kl_divergence_1)
+        self.optim_2 = tf.train.AdamOptimizer(learning_rate = self.config.LEARNING_RATE).minimize(self.kl_divergence_2)
+        self.optim_3 = tf.train.AdamOptimizer(learning_rate = self.config.LEARNING_RATE).minimize(self.kl_divergence_3)
+
+
+        self.summary_placeholders = {}
+        self.summary_ops = {}
+        if self.config.TUTORIAL_WORLD:
+            scalar_summary_tags = ['average_reward','average_numrewards','number_of_episodes','quest1_average_reward_cnt', \
+                    'quest2_average_reward_cnt','quest3_average_reward_cnt']
+        else:
+            scalar_summary_tags = ['average_reward','average_numrewards','number_of_episodes','quest1_average_reward_cnt']
+
+        for tag in scalar_summary_tags:
+            self.summary_placeholders[tag] = tf.placeholder('float32', None, name=tag.replace(' ', '_'))
+            self.summary_ops[tag]  = tf.scalar_summary('evaluation_data/'+tag, self.summary_placeholders[tag])
 
 
         if not(self.config.LOAD_WEIGHTS and self.load_weights()):
             self.session.run(tf.initialize_all_variables())
         self.saver = tf.train.Saver()
 
-    def train(self):
+    def inject_summary(self, tag_dict, step):
+        summary_str_lists = self.session.run([self.summary_ops[tag] for tag in tag_dict.keys()], { \
+        self.summary_placeholders[tag]: value for tag, value in tag_dict.items()})
+        for summary_str in summary_str_lists:
+            self.train_writer.add_summary(summary_str, self.timeStep)                    
+                
+    def train(self,game_id):
 
-        game_id, s_t, Q_action, Q_object = self.memory.sample()
+        s_t, Q_action, Q_object = self.sample(self.data[game_id])
         state_batch = s_t
         target_action_batch = Q_action
         target_object_batch = Q_object
@@ -144,35 +144,67 @@ class DQN:
                     self.stateInput : state_batch
                     },session = self.session)                                
 
-#SEE NETWORK SAVING PART
-        # # save network every 10000 iteration
-        # if self.timeStep % 10000 == 0:
-        #     if not os.path.exists(os.getcwd()+'/Savednetworks'):
-        #         os.makedirs(os.getcwd()+'/Savednetworks')
-        #     self.saver.save(self.session, os.getcwd()+'/Savednetworks/'+'network' + '-dqn', global_step = self.timeStep)
+        # save network every 10000 iteration
+        if self.timeStep % 2000 == 0:
+            if not os.path.exists(os.getcwd()+'/StudentSavednetworks'):
+                os.makedirs(os.getcwd()+'/StudentSavednetworks')
+            self.saver.save(self.session, os.getcwd()+'/StudentSavednetworks/'+'network' + '-student', global_step = self.timeStep)
 
     
     def load_weights(self):
         print 'inload weights'
-        if not os.path.exists(os.getcwd()+'/Savednetworks'):
+        if not os.path.exists(os.getcwd()+'/StudentSavednetworks'):
             return False    
         
-        list_dir = sorted(os.listdir(os.getcwd()+'/Savednetworks'))
-        if not any(item.startswith('network-dqn') for item in list_dir):
+        list_dir = sorted(os.listdir(os.getcwd()+'/StudentSavednetworks'))
+        if not any(item.startswith('network-student') for item in list_dir):
             return False
         
         print 'weights loaded'
-        self.saver.restore(self.session, os.getcwd()+'/Savednetworks/'+list_dir[-2])        
+        self.saver.restore(self.session, os.getcwd()+'/StudentSavednetworks/'+list_dir[-2])        
         return True
 
-    
-    def load_replay_memory(self,config):
-        if os.path.exists(config.model_dir+'/replay_file.save'):
-            fp = open(config.model_dir+'/replay_file.save','rb')
-            memory = pickle.load(fp)
-            fp.close()
+    def sample(self,mem):
+        BATCH_SIZE = 1000
+        batch = random.sample(mem,BATCH_SIZE)
+        s_t = [mem[0] for mem in batch] 
+        action_values = [mem[1] for mem in batch]
+        object_values = [mem[2] for mem in batch]        
+        return s_t, action_values, object_values
+
+    def getAction(self, availableObjects, game_id):
+        action_index = 0
+        object_index = 0
+        curr_epsilon = 0.05
+            
+        if random.random() <= curr_epsilon:
+            action_index = random.randrange(self.config.num_actions)
+            object_index = random.randrange(self.config.num_objects)
         else:
-            memory = ReplayMemory(config)
-        return memory
+            state_batch = np.zeros([self.config.batch_size, self.config.seq_length])
+            state_batch[0] = self.history.get()
+            if game_id==1:
+                action_value = self.action_value_1
+                object_value = self.object_value_1
+            elif game_id==2:
+                action_value = self.action_value_2
+                object_value = self.object_value_2                
+
+            elif game_id==3:
+                action_value = self.action_value_3
+                object_value = self.object_value_3                                
+
+            QValue_action = action_value.eval(feed_dict={self.stateInput:state_batch},session = self.session)[0]
+            bestAction = np.where(QValue_action == np.max(QValue_action))[0]
+            QValue_object = object_value.eval(feed_dict={self.stateInput:state_batch},session = self.session)[0]
+            for i in range(QValue_object.size):
+                if i in availableObjects:
+                    QValue_object[i] = -sys.maxint - 1
+            bestObject = np.where(QValue_object == np.max(QValue_object))[0]
+            action_index = bestAction[random.randrange(0,bestAction.shape[0])]
+            object_index = bestObject[random.randrange(0,bestObject.shape[0])]
+        return action_index, object_index
+
+
           
 
