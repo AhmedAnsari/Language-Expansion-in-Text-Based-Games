@@ -6,7 +6,7 @@
 import os
 # from models.DQN import DQN
 # from models.bow_DQN import DQN
-from lstdq.DQN import DQN
+from models.lstdq import DQN
 import numpy as np
 import cPickle as cpickle
 from models.config import Config

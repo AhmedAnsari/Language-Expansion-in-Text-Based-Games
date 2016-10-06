@@ -31,8 +31,8 @@ class DQN:
         self.timeStep = 0
         self.epsilon = config.INITIAL_EPSILON
 
-        self.stateInput = tf.placeholder(tf.float32, [None, self.config.seq_length])
-        self.stateInputT = tf.placeholder(tf.float32, [None, self.config.seq_length])
+        self.stateInput = tf.placeholder(tf.int32, [None, self.config.seq_length])
+        self.stateInputT = tf.placeholder(tf.int32, [None, self.config.seq_length])
 
         embed = tf.Variable(tf.random_uniform([self.config.vocab_size, self.config.embed_dim], -0.2, 0.2),name="embed")
 
