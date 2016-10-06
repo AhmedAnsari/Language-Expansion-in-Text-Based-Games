@@ -36,7 +36,7 @@ class DQN:
 
 
         # embed = tf.get_variable("embed", [self.config.vocab_size, self.config.embed_dim]) #this is wrong way to initialize
-        embed = tf.Variable(tf.random_uniform([self.config.vocab_size, self.config.embed_dim], -0.02, 0.02),name="embed")
+        embed = tf.Variable(tf.random_uniform([self.config.vocab_size, self.config.embed_dim], -0.01, 0.01),name="embed")
         # embedT = tf.get_variable("embedT", [self.config.vocab_size, self.config.embed_dim])
         # print '$'*100
         word_embeds = tf.nn.embedding_lookup(embed, self.stateInput) # @codewalk: What is this line doing ?
@@ -104,7 +104,7 @@ class DQN:
                     
                     self.quadratic_part_o = tf.minimum(abs(self.delta_o), config.maxDelta)
                     self.linear_part_o = abs(self.delta_o) - self.quadratic_part_o
-                    print self.quadratic_part_a.get_shape()
+
                     self.quadratic_part = tf.concat(0,[self.quadratic_part_a,self.quadratic_part_o])
                     self.linear_part = tf.concat(0,[self.linear_part_a,self.linear_part_o])
 
