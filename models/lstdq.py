@@ -44,11 +44,11 @@ class DQN:
         self.cell = tf.nn.rnn_cell.LSTMCell(self.config.rnn_size, initializer = self.initializer, state_is_tuple=True)
         self.cellT = tf.nn.rnn_cell.LSTMCell(self.config.rnn_size, initializer = self.initializer, state_is_tuple=True)
         
-        # initial_state = self.cell.zero_state(self.config.BATCH_SIZE, tf.float32)
-        # initial_stateT = self.cellT.zero_state(self.config.BATCH_SIZE, tf.float32)
+        initial_state = self.cell.zero_state(self.config.BATCH_SIZE, tf.float32)
+        initial_stateT = self.cellT.zero_state(self.config.BATCH_SIZE, tf.float32)
 
-        outputs, _ = tf.nn.rnn(self.cell, [tf.reshape(embed_t, [-1, self.config.embed_dim]) for embed_t in tf.split(1, self.config.seq_length, word_embeds)], dtype=tf.float32, scope = "LSTMN")
-        outputsT, _ = tf.nn.rnn(self.cellT, [tf.reshape(embed_tT, [-1, self.config.embed_dim]) for embed_tT in tf.split(1, self.config.seq_length, word_embedsT)], dtype=tf.float32, scope = "LSTMT")
+        outputs, _ = tf.nn.rnn(self.cell, [tf.reshape(embed_t, [-1, self.config.embed_dim]) for embed_t in tf.split(1, self.config.seq_length, word_embeds)], dtype=tf.float32, initial_state = initial_state, scope = "LSTMN")
+        outputsT, _ = tf.nn.rnn(self.cellT, [tf.reshape(embed_tT, [-1, self.config.embed_dim]) for embed_tT in tf.split(1, self.config.seq_length, word_embedsT)], dtype=tf.float32, initial_state = initial_stateT, scope = "LSTMT")
 
         output_embed = tf.transpose(tf.pack(outputs), [1, 0, 2])
         output_embedT = tf.transpose(tf.pack(outputsT), [1, 0, 2])
