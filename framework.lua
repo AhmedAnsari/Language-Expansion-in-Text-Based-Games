@@ -5,7 +5,7 @@ require 'torch'
 local underscore = require 'underscore'
 local DEBUG = false
 STATE_DIM = 100
-RECURRENT = 0
+RECURRENT = 1
 local DEFAULT_REWARD = -0.01
 local JUNK_CMD_REWARD = -0.1
 local STEP_COUNT = 0 -- count the number of steps in current episode
