@@ -4,9 +4,9 @@
 # -------------------------
 
 import os
-# from models.DQN import DQN
+from models.DQN import DQN
 # from models.bow_DQN import DQN
-from models.lstdq import DQN
+# from models.lstdq import DQN
 import numpy as np
 import cPickle as cpickle
 from models.config import Config
@@ -52,6 +52,7 @@ def savegame(config):
         Qactions, Qobjects = brain.getQValues(availableObjects)
         action_indicator[action_index] = 1
         object_indicator[object_index] = 1
+        # print state
         memory.append((state, Qactions, Qobjects))
         #act
         nextstate,reward,terminal, availableObjects = env.step(action_index,object_index)
@@ -62,16 +63,16 @@ def savegame(config):
         state = nextstate
 
         if (totalSteps % MEM_STEPS == 0):
-            fileName = str(totalSteps % MEM_STEPS) + "_mem.txt"
+            fileName = str(config.game_num) + "_mem.txt"
             with open(fileName, "a") as fp:
                 for i in range(len(memory)):
-                    for j in memory[0]:
+                    for j in memory[i][0]:
                         print >> fp, j,
                     print >> fp
-                    for j in memory[1]:
+                    for j in memory[i][1]:
                         print >> fp, j,
                     print >> fp
-                    for j in memory[2]:
+                    for j in memory[i][2]:
                         print >> fp, j,
                     print >> fp
             memory = []
@@ -79,8 +80,8 @@ def savegame(config):
 
         if ((terminal) or ((episode_length % config.max_episode_length) == 0)):
             num_episodes += 1
-            with open("train_reward.txt", "a") as fp:
-                print >> fp, (total_reward / (num_episodes * 1.0))    
+            # with open("train_reward.txt", "a") as fp:
+            #     print >> fp, (total_reward / (num_episodes * 1.0))    
             env.START_NEW_GAME = True
             
         pbar.update(1)

@@ -280,6 +280,7 @@ end
 -- }
 function convert_text_to_bow(input_text)
 	--print("convert_text_to_bow")
+	-- print(input_text)
 	local vector = torch.zeros(#symbols)
 	for j, line in pairs(input_text) do
 		line = input_text[j]
