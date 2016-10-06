@@ -31,8 +31,8 @@ class DQN:
         self.timeStep = 0
         self.epsilon = config.INITIAL_EPSILON
 
-        self.stateInput = tf.placeholder(tf.float32, [None, self.config.state_dim])
-        self.stateInputT = tf.placeholder(tf.float32, [None, self.config.state_dim])
+        self.stateInput = tf.placeholder(tf.float32, [None, self.config.seq_length])
+        self.stateInputT = tf.placeholder(tf.float32, [None, self.config.seq_length])
 
         embed = tf.Variable(tf.random_uniform([self.config.vocab_size, self.config.embed_dim], -0.2, 0.2),name="embed")
 
@@ -57,9 +57,9 @@ class DQN:
         mean_poolT = tf.reduce_mean(output_embedT, 1)
 
         with tf.variable_scope("Nfcc1"):
-            W_fc1, b_fc1 = self.linear_weight_variable([100,100])      
+            W_fc1, b_fc1 = self.linear_weight_variable([mean_pool.get_shape()[1],100])      
         with tf.variable_scope("Tfcc1"):
-            W_fc1T, b_fc1T = self.linear_weight_variable([100,100])
+            W_fc1T, b_fc1T = self.linear_weight_variable([mean_pool.get_shape()[1],100])
 
         mean_pool1 = tf.matmul(mean_pool,W_fc1)+b_fc1
         mean_poolT1 = tf.matmul(mean_poolT,W_fc1T)+b_fc1T
@@ -348,7 +348,7 @@ class DQN:
             action_index = random.randrange(self.config.num_actions)
             object_index = random.randrange(self.config.num_objects)
         else:
-            state_batch = np.zeros([self.config.batch_size, self.config.state_dim])
+            state_batch = np.zeros([self.config.batch_size, self.config.seq_length])
             state_batch[0] = self.history.get()
             QValue_action = self.action_value.eval(feed_dict={self.stateInput:state_batch},session = self.session)[0]
             bestAction = np.where(QValue_action == np.max(QValue_action))[0]
