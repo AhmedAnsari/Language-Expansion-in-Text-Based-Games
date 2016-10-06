@@ -44,7 +44,7 @@ def evaluate(brain,env,config):
 
         #observe
         brain.setPerception(state, reward, action_indicator, object_indicator, nextstate, terminal, True)
-        nextstate = state            
+        state = nextstate
 
 
         if config.TUTORIAL_WORLD:
@@ -122,7 +122,7 @@ def playgame(config):
         episode_length += 1
         #observe
         brain.setPerception(state, reward, action_indicator, object_indicator, nextstate, terminal, False)
-        nextstate = state
+        state = nextstate
 
         if ((terminal) or ((episode_length % config.max_episode_length) == 0)):
             num_episodes += 1
