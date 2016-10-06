@@ -199,7 +199,7 @@ def playgame(config):
                     'average.q_a': avgEvalQValues_a,
                     'average.q_o': avgEvalQValues_o,
                     'average_reward':total_reward,
-                    'average_num_pos_reward':nrewards,
+                    'average_numrewards':nrewards,
                     'number_of_episodes':nepisodes,
                     'quest1_average_reward_cnt':quest1_reward_cnt
                   }, brain.timeStep)

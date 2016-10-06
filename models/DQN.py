@@ -152,10 +152,10 @@ class DQN:
         self.summary_placeholders = {}
         self.summary_ops = {}
         if self.config.TUTORIAL_WORLD:
-            scalar_summary_tags = ['average.q_a','average.q_o','average_reward','average_num_pos_reward','number_of_episodes','quest1_average_reward_cnt', \
+            scalar_summary_tags = ['average.q_a','average.q_o','average_reward','average_numrewards','number_of_episodes','quest1_average_reward_cnt', \
                     'quest2_average_reward_cnt','quest3_average_reward_cnt']
         else:
-            scalar_summary_tags = ['average.q_a','average.q_o','average_reward','average_num_pos_reward','number_of_episodes','quest1_average_reward_cnt']
+            scalar_summary_tags = ['average.q_a','average.q_o','average_reward','average_numrewards','number_of_episodes','quest1_average_reward_cnt']
 
         for tag in scalar_summary_tags:
             self.summary_placeholders[tag] = tf.placeholder('float32', None, name=tag.replace(' ', '_'))
