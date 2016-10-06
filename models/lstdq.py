@@ -34,7 +34,7 @@ class DQN:
         self.stateInput = tf.placeholder(tf.int32, [None, self.config.seq_length])
         self.stateInputT = tf.placeholder(tf.int32, [None, self.config.seq_length])
 
-        embed = tf.Variable(tf.random_uniform([self.config.vocab_size, self.config.embed_dim], -0.2, 0.2),name="embed")
+        embed = tf.Variable(tf.random_uniform([self.config.vocab_size, self.config.embed_dim], -1, 1),name="embed")
 
         word_embeds = tf.nn.embedding_lookup(embed, self.stateInput) # @codewalk: What is this line doing ?
         word_embedsT = tf.nn.embedding_lookup(embed, self.stateInputT) # @codewalk: What is this line doing ?

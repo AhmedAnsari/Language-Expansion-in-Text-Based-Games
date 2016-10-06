@@ -36,7 +36,7 @@ class DQN:
 
 
         # embed = tf.get_variable("embed", [self.config.vocab_size, self.config.embed_dim]) #this is wrong way to initialize
-        embed = tf.Variable(tf.random_uniform([self.config.vocab_size, self.config.embed_dim], -0.01, 0.01),name="embed")
+        embed = tf.Variable(tf.random_uniform([self.config.vocab_size, self.config.embed_dim], -1, 1),name="embed")
         # embedT = tf.get_variable("embedT", [self.config.vocab_size, self.config.embed_dim])
         # print '$'*100
         word_embeds = tf.nn.embedding_lookup(embed, self.stateInput) # @codewalk: What is this line doing ?
