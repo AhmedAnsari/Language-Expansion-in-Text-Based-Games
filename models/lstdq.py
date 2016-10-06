@@ -65,7 +65,7 @@ class DQN:
         mean_poolT1 = tf.matmul(mean_poolT,W_fc1T)+b_fc1T
 
         linear_output1 = tf.nn.relu(mean_pool1)
-        linear_outputT1 = tf.nn.relu(mean_poolT1)
+        linear_outputT1 = tf.nn.relu(mean_poolT)
 
         with tf.variable_scope("Nfcc2"):
             W_fc2, b_fc2 = self.linear_weight_variable([100,100])        
