@@ -345,6 +345,15 @@ class DQN:
 
 
         return action_index, object_index
+
+    def getQValues(self, availableObjects, evaluate = False):
+            
+        state_batch = np.zeros([self.config.batch_size, self.config.state_dim])
+        state_batch[0] = self.history.get()
+        QValue_action = self.action_value.eval(feed_dict={self.stateInput:state_batch},session = self.session)[0]
+        QValue_object = self.object_value.eval(feed_dict={self.stateInput:state_batch},session = self.session)[0]
+
+        return QValue_action, QValue_object
     
     def load_weights(self):
         print 'inload weights'
