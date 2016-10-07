@@ -83,10 +83,14 @@ def evaluate(brain,env,config):
 
 def reader(fileName):
     data = load_data(fileName)
-    memory = []
-    for i in range(len(fileName)):
-        memory.append([data[0][i], data[1][i], data[2][i]])
-    return memory
+    # print len(data[0])
+    # print len(data[1])
+    # print len(data[2])
+    # memory = []
+    # for i in range(len(fileName)):
+    #     memory.append([data[0][i], data[1][i], data[2][i]])
+    # return memory
+    return zip (data[0],data[1],data[2])
 
 def learnstudent(config):
     # Step 1: init Game
