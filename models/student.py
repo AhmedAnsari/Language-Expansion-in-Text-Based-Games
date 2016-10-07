@@ -1,9 +1,7 @@
-import time
-from tqdm import tqdm
 import random
 import numpy as np
 import tensorflow as tf
-from collections import deque
+import sys
 
 # from .base import Model
 
@@ -11,9 +9,6 @@ from collections import deque
 
 import os
 from history import History
-from replay_memory import ReplayMemory
-import cPickle as pickle
-
 class student:
     def __init__(self, config):
 
@@ -164,9 +159,12 @@ class student:
         self.saver.restore(self.session, os.getcwd()+'/StudentSavednetworks/'+list_dir[-2])        
         return True
 
-    def sample(self,mem):
+    def sample(self,memory):
+        print "$"*100
+        print len(memory)
+        print "$"*100        
         BATCH_SIZE = 1000
-        batch = random.sample(mem,BATCH_SIZE)
+        batch = random.sample(memory,BATCH_SIZE)
         s_t = [mem[0] for mem in batch] 
         action_values = [mem[1] for mem in batch]
         object_values = [mem[2] for mem in batch]        
