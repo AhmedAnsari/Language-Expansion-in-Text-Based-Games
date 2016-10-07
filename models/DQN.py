@@ -179,7 +179,10 @@ class DQN:
         # self.optim_o = tf.train.AdagradOptimizer(learning_rate = self.config.LEARNING_RATE).minimize(self.loss_o)
         # self.optim1 = tf.train.AdamOptimizer(learning_rate = self.config.LEARNING_RATE).minimize(self.loss_a)
         # self.optim2 = tf.train.AdamOptimizer(learning_rate = self.config.LEARNING_RATE).minimize(self.loss_o)
+
+        self.saver = tf.train.Saver()
         self.optim = tf.train.AdamOptimizer(learning_rate = self.config.LEARNING_RATE).minimize(self.loss)
+        self.saver = tf.train.Saver()        
         if not(self.config.LOAD_WEIGHTS and self.load_weights()):
             # self.merged = tf.merge_all_summaries()
             self.merged = tf.merge_summary(summary_list)
@@ -188,7 +191,7 @@ class DQN:
 
 
         self.copyTargetQNetworkOperation()
-        self.saver = tf.train.Saver()
+
 
 
     def variable_summaries(self, var, name,list_summary):
