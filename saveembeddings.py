@@ -37,7 +37,7 @@ def savegame(config):
         for i in range(len(data) - 1):
             splitdata = data[i].split(' ')
             dic[int(splitdata[1])] = splitdata[0]
-
+    dic[0] = "null"
 
     fp = open("lstm_100_embeddings.txt","w")
     for i in range(config.vocab_size):
