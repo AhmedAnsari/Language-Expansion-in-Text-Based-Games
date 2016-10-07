@@ -82,8 +82,8 @@ def evaluate(brain,env,config):
         return total_reward, nrewards, nepisodes, quest1_reward_cnt
 
 def reader(fileName):
-    data = load_data(fileName))
-    print len(data[0])
+    data = load_data(fileName)
+    # print len(data[0])
     # print len(data[1])
     # print len(data[2])
     # memory = []

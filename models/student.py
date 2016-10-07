@@ -105,9 +105,11 @@ class student:
             self.summary_ops[tag]  = tf.scalar_summary('evaluation_data/'+tag, self.summary_placeholders[tag])
 
 
-        if not(self.config.LOAD_WEIGHTS and self.load_weights()):
-            self.session.run(tf.initialize_all_variables())
         self.saver = tf.train.Saver()
+        if not(self.config.LOAD_WEIGHTS and self.load_weights()):
+            self.train_writer = tf.train.SummaryWriter(self.config.summaries_dir + '/train/'+str(self.config.game_num),self.session.graph)            
+            self.session.run(tf.initialize_all_variables())
+        
 
     def inject_summary(self, tag_dict, step):
         summary_str_lists = self.session.run([self.summary_ops[tag] for tag in tag_dict.keys()], { \
@@ -146,6 +148,7 @@ class student:
                 os.makedirs(os.getcwd()+'/StudentSavednetworks')
             self.saver.save(self.session, os.getcwd()+'/StudentSavednetworks/'+'network' + '-student', global_step = self.timeStep)
 
+
     
     def load_weights(self):
         print 'inload weights'
@@ -161,9 +164,9 @@ class student:
         return True
 
     def sample(self,memory):
-        print "$"*100
-        print len(memory)
-        print "$"*100        
+        # print "$"*100
+        # print len(memory)
+        # print "$"*100        
         batch = random.sample(memory,self.BATCH_SIZE)
         s_t = [mem[0] for mem in batch] 
         action_values = [mem[1] for mem in batch]
