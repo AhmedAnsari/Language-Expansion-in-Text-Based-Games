@@ -179,7 +179,7 @@ class DQN:
         # self.optim_o = tf.train.AdagradOptimizer(learning_rate = self.config.LEARNING_RATE).minimize(self.loss_o)
         # self.optim1 = tf.train.AdamOptimizer(learning_rate = self.config.LEARNING_RATE).minimize(self.loss_a)
         # self.optim2 = tf.train.AdamOptimizer(learning_rate = self.config.LEARNING_RATE).minimize(self.loss_o)
-        self.copyTargetQNetworkOperation()
+
         self.saver = tf.train.Saver()
         self.optim = tf.train.AdamOptimizer(learning_rate = self.config.LEARNING_RATE).minimize(self.loss)
         self.saver = tf.train.Saver()        
