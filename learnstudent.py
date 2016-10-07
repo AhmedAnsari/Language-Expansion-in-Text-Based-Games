@@ -45,7 +45,7 @@ def evaluate(brain,env,config):
 
         if config.TUTORIAL_WORLD:
             if(reward > 9):
-                quest1_reward_cnt =quest1_reward_cnt+1
+                quest1_reward_cnt = quest1_reward_cnt+1
 
             elif reward > 0.9:
                 quest2_reward_cnt = quest2_reward_cnt + 1
