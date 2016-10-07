@@ -20,7 +20,6 @@ class student:
         self.stateInput = tf.placeholder(tf.int32, [None, self.config.seq_length])
         self.data = {}
         self.history = History()
-        self.BATCH_SIZE = 1000
 
         embed = tf.Variable(tf.random_uniform([self.config.vocab_size, self.config.embed_dim], -1.0, 1.0),name="embed")
         word_embeds = tf.nn.embedding_lookup(embed, self.stateInput) 
@@ -180,7 +179,7 @@ class student:
             action_index = random.randrange(self.config.num_actions)
             object_index = random.randrange(self.config.num_objects)
         else:
-            state_batch = np.zeros([, self.config.seq_length])
+            state_batch = np.zeros([self.BATCH_SIZE, self.config.seq_length])
             state_batch[0] = self.history.get()
             if game_id==1:
                 action_value = self.action_value_1
