@@ -275,7 +275,7 @@ function makeSymbolMapping(filename)
 end
 
 function writeSymbolMapping()
-	print("I am in text to ordered")
+	--print("I am in text to ordered")
 	-- print(symbol_mapping)
 	file = io.open("symbolMapping.txt", "w")
 	for key, value in pairs(symbol_mapping) do
