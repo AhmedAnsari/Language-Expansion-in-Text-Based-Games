@@ -32,7 +32,7 @@ def savegame(config):
     # checkStates = None
     #adding progress bar for training
     dic = {}
-    with open("symbolMapping.txt", 'r'):
+    with open("symbolMapping.txt", 'r') as fp:
         data = fp.read().split('\n')
         for i in data:
             splitdata = i.split(' ')
