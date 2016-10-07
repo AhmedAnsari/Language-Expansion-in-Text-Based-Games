@@ -93,9 +93,9 @@ def learnstudent(config):
     config.setvocabsize(env.vocab_size())
 
     brain = student(config)
-    brain.data[1] = load_data('1_mem.txt')
-    brain.data[2] = load_data('2_mem.txt')
-    brain.data[3] = load_data('3_mem.txt')
+    brain.data[1] = zip(load_data('1_mem.txt'))
+    brain.data[2] = zip(load_data('2_mem.txt'))
+    brain.data[3] = zip(load_data('3_mem.txt'))
     
 
     #adding progress bar for training
@@ -103,6 +103,7 @@ def learnstudent(config):
 	while True:    
 		for _ in range(1,4):
 			brain.train(_)
+        brain.timeStep += 1
 #####################################################################
         #for evaluating qvalues
         if (brain.timeStep % 2) and (brain.timeStep != 0):
