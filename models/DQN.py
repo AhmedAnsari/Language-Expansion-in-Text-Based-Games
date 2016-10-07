@@ -60,11 +60,11 @@ class DQN:
         self.output_embed = tf.transpose(tf.pack(outputs), [1, 0, 2])
         self.output_embedT = tf.transpose(tf.pack(outputsT), [1, 0, 2])
         # print '$'*100
-        mean_pool = tf.reduce_mean(output_embed, 1)
-        mean_poolT = tf.reduce_mean(output_embedT, 1)
+        mean_pool = tf.reduce_mean(self.output_embed, 1)
+        mean_poolT = tf.reduce_mean(self.output_embedT, 1)
         # print '$'*100
-        linear_output = tf.nn.relu(tf.nn.rnn_cell._linear(mean_pool, int(output_embed.get_shape()[2]), 1,0.01, scope="linearN"))
-        linear_outputT = tf.nn.relu(tf.nn.rnn_cell._linear(mean_poolT, int(output_embedT.get_shape()[2]),1, 0.01, scope="linearT"))
+        linear_output = tf.nn.relu(tf.nn.rnn_cell._linear(mean_pool, int(self.output_embed.get_shape()[2]), 1,0.01, scope="linearN"))
+        linear_outputT = tf.nn.relu(tf.nn.rnn_cell._linear(mean_poolT, int(self.output_embedT.get_shape()[2]),1, 0.01, scope="linearT"))
         # print '$'*100
 
         self.action_value = tf.nn.rnn_cell._linear(linear_output, self.config.num_actions, 1,0.01, scope="actionN")
@@ -180,7 +180,6 @@ class DQN:
         # self.optim1 = tf.train.AdamOptimizer(learning_rate = self.config.LEARNING_RATE).minimize(self.loss_a)
         # self.optim2 = tf.train.AdamOptimizer(learning_rate = self.config.LEARNING_RATE).minimize(self.loss_o)
 
-        self.saver = tf.train.Saver()
         self.optim = tf.train.AdamOptimizer(learning_rate = self.config.LEARNING_RATE).minimize(self.loss)
         self.saver = tf.train.Saver()        
         if not(self.config.LOAD_WEIGHTS and self.load_weights()):
