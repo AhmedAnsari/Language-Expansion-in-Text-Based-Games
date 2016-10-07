@@ -20,7 +20,7 @@ class student:
         self.stateInput = tf.placeholder(tf.int32, [None, self.config.seq_length])
         self.data = {}
         self.history = History()
-        self.BATCH_SIZE = 64
+        self.BATCH_SIZE = 256
 
         embed = tf.Variable(tf.random_uniform([self.config.vocab_size, self.config.embed_dim], -1.0, 1.0),name="embed")
         word_embeds = tf.nn.embedding_lookup(embed, self.stateInput) 

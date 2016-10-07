@@ -117,7 +117,7 @@ def learnstudent(config):
         brain.timeStep += 1
 #####################################################################
         #for evaluating qvalues
-        if (brain.timeStep % 2) and (brain.timeStep != 0):
+        if (brain.timeStep % 100) and (brain.timeStep != 0):
             env_eval = env
             if config.TUTORIAL_WORLD:
                 total_reward, nrewards, nepisodes, quest1_reward_cnt, quest2_reward_cnt, quest3_reward_cnt = evaluate(brain, env_eval, config)

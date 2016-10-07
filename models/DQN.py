@@ -350,8 +350,8 @@ class DQN:
             
         state_batch = np.zeros([self.config.batch_size, self.config.seq_length])
         state_batch[0] = self.history.get()
-        QValue_action = self.action_value.eval(feed_dict={self.stateInput:state_batch},session = self.session)[0]
-        QValue_object = self.object_value.eval(feed_dict={self.stateInput:state_batch},session = self.session)[0]
+        QValue_action = self.action_value.eval(feed_dict={self.stateInputT:state_batch},session = self.session)[0]
+        QValue_object = self.object_value.eval(feed_dict={self.stateInputT:state_batch},session = self.session)[0]
 
         return QValue_action, QValue_object
     

@@ -34,7 +34,7 @@ def savegame(config):
     episode_length = 0
     num_episodes = 0
     total_reward = 0
-    MAX_STEPS = 1000000
+    MAX_STEPS = 105000
     totalSteps = 0
     MEM_STEPS = 10000
     memory = []
@@ -80,8 +80,8 @@ def savegame(config):
 
         if ((terminal) or ((episode_length % config.max_episode_length) == 0)):
             num_episodes += 1
-            # with open("train_reward.txt", "a") as fp:
-            #     print >> fp, (total_reward / (num_episodes * 1.0))    
+            with open("saver_reward.txt", "a") as fp:
+                print >> fp, (total_reward / (num_episodes * 1.0))    
             env.START_NEW_GAME = True
             
         pbar.update(1)
