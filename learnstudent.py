@@ -22,7 +22,7 @@ def evaluate(brain,env,config):
 
     quest3_reward_cnt = 0
     quest2_reward_cnt = 0
-    quest1_reward_cnt = 0    
+    quest1_reward_cnt = 0
     pbar =  tqdm(total = config.NUM_EVAL_STEPS, desc = 'TESTING')
     for estep in range(config.NUM_EVAL_STEPS):
         #@TODO:add progress bar here
@@ -34,7 +34,7 @@ def evaluate(brain,env,config):
         action_indicator[action_index] = 1
         object_indicator[object_index] = 1
 
-        
+
         ##-- Play game in test mode (episodes don't end when losing a life)
         nextstate,reward,terminal, available_objects = env.step(action_index,object_index)
 
@@ -45,7 +45,7 @@ def evaluate(brain,env,config):
 
         if config.TUTORIAL_WORLD:
             if(reward > 9):
-                quest1_reward_cnt =quest1_reward_cnt+1
+                quest1_reward_cnt = quest1_reward_cnt+1
 
             elif reward > 0.9:
                 quest2_reward_cnt = quest2_reward_cnt + 1
@@ -59,7 +59,7 @@ def evaluate(brain,env,config):
         episode_reward = episode_reward + reward
 
         if reward != 0:
-           nrewards = nrewards + 1
+            nrewards = nrewards + 1
 
         if terminal:
             total_reward = total_reward + episode_reward
@@ -81,6 +81,17 @@ def evaluate(brain,env,config):
     else:
         return total_reward, nrewards, nepisodes, quest1_reward_cnt
 
+def reader(fileName):
+    data = load_data(fileName)
+    # print len(data[0])
+    # print len(data[1])
+    # print len(data[2])
+    # memory = []
+    # for i in range(len(fileName)):
+    #     memory.append([data[0][i], data[1][i], data[2][i]])
+    # return memory
+    return zip (data[0],data[1],data[2])
+
 def learnstudent(config):
     # Step 1: init Game
     env = Environment(config.game_num) #1 is for main game 2 is for evaluation
@@ -93,16 +104,16 @@ def learnstudent(config):
     config.setvocabsize(env.vocab_size())
 
     brain = student(config)
-    brain.data[1] = zip(load_data('1_mem.txt'))
-    brain.data[2] = zip(load_data('2_mem.txt'))
-    brain.data[3] = zip(load_data('3_mem.txt'))
-    
+    brain.data[1] = reader('1_mem.txt')
+    brain.data[2] = reader('2_mem.txt')
+    brain.data[3] = reader('3_mem.txt')
+
 
     #adding progress bar for training
     pbar = tqdm(total = config.MAX_FRAMES, desc='Training Progress')
-	while True:    
-		for _ in range(1,4):
-			brain.train(_)
+    while True:
+        for _ in range(1,4):
+            brain.train(_)
         brain.timeStep += 1
 #####################################################################
         #for evaluating qvalues
@@ -112,7 +123,7 @@ def learnstudent(config):
                 total_reward, nrewards, nepisodes, quest1_reward_cnt, quest2_reward_cnt, quest3_reward_cnt = evaluate(brain, env_eval, config)
             else:
                 total_reward, nrewards, nepisodes, quest1_reward_cnt = evaluate(brain, env_eval, config)
-            
+
 #####################################################################
             if config.TUTORIAL_WORLD:
                 brain.inject_summary({
@@ -132,8 +143,8 @@ def learnstudent(config):
                   }, brain.timeStep)
 #####################################################################
         pbar.update(1)
-            
-            
+
+
         if (brain.timeStep) > config.MAX_FRAMES:
             brain.train_writer.close()
             break

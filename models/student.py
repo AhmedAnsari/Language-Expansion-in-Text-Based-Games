@@ -1,9 +1,7 @@
-import time
-from tqdm import tqdm
 import random
 import numpy as np
 import tensorflow as tf
-from collections import deque
+import sys
 
 # from .base import Model
 
@@ -11,9 +9,6 @@ from collections import deque
 
 import os
 from history import History
-from replay_memory import ReplayMemory
-import cPickle as pickle
-
 class student:
     def __init__(self, config):
 
@@ -25,12 +20,13 @@ class student:
         self.stateInput = tf.placeholder(tf.int32, [None, self.config.seq_length])
         self.data = {}
         self.history = History()
+        self.BATCH_SIZE = 64
 
         embed = tf.Variable(tf.random_uniform([self.config.vocab_size, self.config.embed_dim], -1.0, 1.0),name="embed")
         word_embeds = tf.nn.embedding_lookup(embed, self.stateInput) 
         self.initializer = tf.truncated_normal_initializer(stddev = 0.02)
         self.cell = tf.nn.rnn_cell.LSTMCell(self.config.rnn_size, initializer = self.initializer, state_is_tuple=True)
-        initial_state = self.cell.zero_state(self.config.BATCH_SIZE, tf.float32)
+        initial_state = self.cell.zero_state(self.BATCH_SIZE, tf.float32)
         outputs, _ = tf.nn.rnn(self.cell, [tf.reshape(embed_t, [-1, self.config.embed_dim]) for embed_t in tf.split(1, self.config.seq_length, word_embeds)], dtype=tf.float32, initial_state = initial_state, scope = "LSTMN")
         self.output_embed = tf.transpose(tf.pack(outputs), [1, 0, 2])
         self.mean_pool = tf.reduce_mean(self.output_embed, 1)
@@ -109,9 +105,11 @@ class student:
             self.summary_ops[tag]  = tf.scalar_summary('evaluation_data/'+tag, self.summary_placeholders[tag])
 
 
-        if not(self.config.LOAD_WEIGHTS and self.load_weights()):
-            self.session.run(tf.initialize_all_variables())
         self.saver = tf.train.Saver()
+        if not(self.config.LOAD_WEIGHTS and self.load_weights()):
+            self.train_writer = tf.train.SummaryWriter(self.config.summaries_dir + '/train/'+str(self.config.game_num),self.session.graph)            
+            self.session.run(tf.initialize_all_variables())
+        
 
     def inject_summary(self, tag_dict, step):
         summary_str_lists = self.session.run([self.summary_ops[tag] for tag in tag_dict.keys()], { \
@@ -150,6 +148,7 @@ class student:
                 os.makedirs(os.getcwd()+'/StudentSavednetworks')
             self.saver.save(self.session, os.getcwd()+'/StudentSavednetworks/'+'network' + '-student', global_step = self.timeStep)
 
+
     
     def load_weights(self):
         print 'inload weights'
@@ -164,9 +163,11 @@ class student:
         self.saver.restore(self.session, os.getcwd()+'/StudentSavednetworks/'+list_dir[-2])        
         return True
 
-    def sample(self,mem):
-        BATCH_SIZE = 1000
-        batch = random.sample(mem,BATCH_SIZE)
+    def sample(self,memory):
+        # print "$"*100
+        # print len(memory)
+        # print "$"*100        
+        batch = random.sample(memory,self.BATCH_SIZE)
         s_t = [mem[0] for mem in batch] 
         action_values = [mem[1] for mem in batch]
         object_values = [mem[2] for mem in batch]        
@@ -181,7 +182,7 @@ class student:
             action_index = random.randrange(self.config.num_actions)
             object_index = random.randrange(self.config.num_objects)
         else:
-            state_batch = np.zeros([self.config.batch_size, self.config.seq_length])
+            state_batch = np.zeros([self.BATCH_SIZE, self.config.seq_length])
             state_batch[0] = self.history.get()
             if game_id==1:
                 action_value = self.action_value_1
