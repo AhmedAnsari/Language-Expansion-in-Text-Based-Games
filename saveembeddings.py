@@ -31,12 +31,20 @@ def savegame(config):
 
     # checkStates = None
     #adding progress bar for training
+    dic = {}
+    with open("symbolMapping.txt", 'r'):
+        data = fp.read().split('\n')
+        for i in data:
+            splitdata = i.split(' ')
+            dic[int(splitdata[1])] = splitdata[0]
+
+
     fp = open("lstm_100_embeddings.txt","w")
     for i in range(config.vocab_size):
         state = np.zeros([config.batch_size,config.seq_length])
         state[0,-1]=i
         embedding = brain.output_embedT.eval(feed_dict={brain.stateInputT = state},session=brain.session)[0,0,:]
-        print >> fp,i
+        print >> fp,dic[i]
         print >> fp,embedding
     brain.session.close()
 
