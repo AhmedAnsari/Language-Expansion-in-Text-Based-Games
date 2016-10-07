@@ -26,14 +26,14 @@ class student:
         self.data = {}
         self.history = History()
 
-        embed = tf.Variable(tf.random_uniform([self.config.vocab_size, self.config.embed_dim], -1.0, 1.0),name="embed"))
+        embed = tf.Variable(tf.random_uniform([self.config.vocab_size, self.config.embed_dim], -1.0, 1.0),name="embed")
         word_embeds = tf.nn.embedding_lookup(embed, self.stateInput) 
         self.initializer = tf.truncated_normal_initializer(stddev = 0.02)
-        self.cell = tf.nn.rnn_cell.LSTMCell(self.config.rnn_size, initializer = self.initializer)
+        self.cell = tf.nn.rnn_cell.LSTMCell(self.config.rnn_size, initializer = self.initializer, state_is_tuple=True)
         initial_state = self.cell.zero_state(self.config.BATCH_SIZE, tf.float32)
         outputs, _ = tf.nn.rnn(self.cell, [tf.reshape(embed_t, [-1, self.config.embed_dim]) for embed_t in tf.split(1, self.config.seq_length, word_embeds)], dtype=tf.float32, initial_state = initial_state, scope = "LSTMN")
         output_embed = tf.transpose(tf.pack(outputs), [1, 0, 2])
-        mean_pool = tf.nn.relu(tf.reduce_mean(output_embed, 1))
+        mean_pool = tf.reduce_mean(output_embed, 1)
         linear_output = tf.nn.relu(tf.nn.rnn_cell._linear(mean_pool, int(output_embed.get_shape()[2]), 1.0, 0.01, scope="linearN"))
         
 
