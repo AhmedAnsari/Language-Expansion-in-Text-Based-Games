@@ -20,7 +20,7 @@ class student:
         self.stateInput = tf.placeholder(tf.int32, [None, self.config.seq_length])
         self.data = {}
         self.history = History()
-        self.BATCH_SIZE = 1000
+        self.BATCH_SIZE = 64
 
         embed = tf.Variable(tf.random_uniform([self.config.vocab_size, self.config.embed_dim], -1.0, 1.0),name="embed")
         word_embeds = tf.nn.embedding_lookup(embed, self.stateInput) 
@@ -164,7 +164,6 @@ class student:
         print "$"*100
         print len(memory)
         print "$"*100        
-        self.BATCH_SIZE = 1000
         batch = random.sample(memory,self.BATCH_SIZE)
         s_t = [mem[0] for mem in batch] 
         action_values = [mem[1] for mem in batch]
