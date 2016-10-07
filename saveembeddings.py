@@ -34,7 +34,7 @@ def savegame(config):
     dic = {}
     with open("symbolMapping.txt", 'r') as fp:
         data = fp.read().split('\n')
-        for i in range(len(data)):
+        for i in range(len(data) - 1):
             splitdata = data[i].split(' ')
             dic[int(splitdata[1])] = splitdata[0]
 
