@@ -12,6 +12,7 @@ counter = arg[1]
 framework.makeSymbolMapping("../text-world/evennia/contrib/text_sims/build.ev")
 framework.makeSymbolMapping("../text-world/evennia/contrib/text_sims3/build.ev")
 framework.makeSymbolMapping("../text-world/evennia/contrib/text_sims4/build.ev")
+framework.writeSymbolMapping()
 print("#symbols", #symbols)
 framework.interact(counter) 
 

@@ -274,6 +274,16 @@ function makeSymbolMapping(filename)
 	addExtraWordsToVocab()
 end
 
+function writeSymbolMapping()
+	print("I am in text to ordered")
+	-- print(symbol_mapping)
+	file = io.open("symbolMapping.txt", "w")
+	for key, value in pairs(symbol_mapping) do
+		file:write(key, " ", value, "\n")
+	end
+	io.close(file)
+end
+
 -- Args: {
 --	1: desc of room
 --	2: quest desc
@@ -352,6 +362,7 @@ function convert_text_to_bow2(input_text)
 	return vector
 end
 
+
 -- for recurrent networks
 -- assumes that the symbol mapping has already been created
 -- STATE_DIM = max desc/quest length
@@ -362,6 +373,8 @@ function convert_text_to_ordered_list(input_text)
 	local vector = torch.ones(STATE_DIM) * NULL_INDEX
 	local REVERSE = true --reverse the order of words to have padding in beginning
 	cnt=1
+
+
 	for j=1, 2 do
 		line = input_text[j]
 		local list_words = split(line, "%a+")
@@ -503,6 +516,7 @@ return {
 	newGame = newGame,
 	nextRandomGame = nextRandomGame,
 	vector_function = vector_function,
-	interact = interact
+	interact = interact,
+	writeSymbolMapping = writeSymbolMapping
 }
 
