@@ -48,7 +48,7 @@ def savegame(config):
         action_indicator = np.zeros(actions)
         object_indicator = np.zeros(objects)
         #predict
-        action_index,object_index = brain.getAction(availableObjects)
+        action_index,object_index = brain.getAction(availableObjects, True)
         Qactions, Qobjects = brain.getQValues(availableObjects)
         action_indicator[action_index] = 1
         object_indicator[object_index] = 1
@@ -59,7 +59,7 @@ def savegame(config):
         total_reward += reward
         episode_length += 1
         #observe
-        brain.setPerception(state, reward, action_indicator, object_indicator, nextstate, terminal, False)
+        brain.setPerception(state, reward, action_indicator, object_indicator, nextstate, terminal, True)
         state = nextstate
 
         if (totalSteps % MEM_STEPS == 0):
