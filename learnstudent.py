@@ -81,6 +81,13 @@ def evaluate(brain,env,config):
     else:
         return total_reward, nrewards, nepisodes, quest1_reward_cnt
 
+def reader(fileName):
+    data = load_data(fileName)
+    memory = []
+    for i in range(len(fileName)):
+        memory.append([data[0][i], data[1][i], data[2][i]])
+    return memory
+
 def learnstudent(config):
     # Step 1: init Game
     env = Environment(config.game_num) #1 is for main game 2 is for evaluation
@@ -93,9 +100,9 @@ def learnstudent(config):
     config.setvocabsize(env.vocab_size())
 
     brain = student(config)
-    brain.data[1] = zip(load_data('1_mem.txt'))
-    brain.data[2] = zip(load_data('2_mem.txt'))
-    brain.data[3] = zip(load_data('3_mem.txt'))
+    brain.data[1] = reader('1_mem.txt')
+    brain.data[2] = reader('2_mem.txt')
+    brain.data[3] = reader('3_mem.txt')
 
 
     #adding progress bar for training
