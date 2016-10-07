@@ -10,7 +10,7 @@ local DEFAULT_REWARD = -0.01
 local JUNK_CMD_REWARD = -0.1
 local STEP_COUNT = 0 -- count the number of steps in current episode
 local QUEST_LEVELS = 1
-local MAX_STEPS = 20
+local MAX_STEPS = 20 --has to be changed
 
 --Simple quests
 quests = {'You are hungry.','You are sleepy.', 'You are bored.', 'You are getting fat.'}
