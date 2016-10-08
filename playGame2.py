@@ -23,7 +23,6 @@ def evaluate(brain,env,config):
     nrewards = 0
     nepisodes = 0
     episode_reward = 0
-    episode_length = 0
 
     quest3_reward_cnt = 0
     quest2_reward_cnt = 0
@@ -42,7 +41,6 @@ def evaluate(brain,env,config):
         
         ##-- Play game in test mode (episodes don't end when losing a life)
         nextstate,reward,terminal, available_objects = env.step(action_index,object_index)
-        episode_length += 1
 
         #observe
         brain.setPerception(state, reward, action_indicator, object_indicator, nextstate, terminal, True)
@@ -67,10 +65,9 @@ def evaluate(brain,env,config):
         if reward != 0:
            nrewards = nrewards + 1
 
-        if (terminal  or ((episode_length % config.max_episode_length) == 0)):
+        if terminal:
             total_reward = total_reward + episode_reward
             episode_reward = 0
-            episode_length = 0
             nepisodes = nepisodes + 1
             state, reward, terminal, available_objects = env.newGame()
             brain.history.add(state)
@@ -127,7 +124,7 @@ def playgame(config):
         brain.setPerception(state, reward, action_indicator, object_indicator, nextstate, terminal, False)
         state = nextstate
 
-        if ((terminal)):
+        if ((terminal) or ((episode_length % config.max_episode_length) == 0)):
             num_episodes += 1
             with open("train_reward.txt", "a") as fp:
                 print >> fp, (total_reward / (num_episodes * 1.0))    

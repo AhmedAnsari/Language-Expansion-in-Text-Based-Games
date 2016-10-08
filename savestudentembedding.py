@@ -40,7 +40,7 @@ def savegame(config):
     dic[0] = "null"
 
     fp = open("lstm_100_embeddings.txt","w")
-    for i in range(config.vocab_size):
+    for i in range(config.vocab_size-1):
         state = np.zeros([brain.BATCH_SIZE,config.seq_length])
         state[0,-1]=i
         embedding = brain.output_embed.eval(feed_dict={brain.stateInput : state},session=brain.session)[0,0,:]
