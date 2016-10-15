@@ -83,12 +83,15 @@ class DQN:
         self.pred_object_value = tf.reduce_sum(tf.mul(self.object_indicator, self.object_value), 1)
 
         self.target_qpred = tf.truediv(tf.add(self.target_action_value,self.target_object_value),2.0)
-        self.qpred = tf.truediv(tf.add(self.pred_action_value,self.pred_object_value),2.0)
+
+        # self.qpred = tf.truediv(tf.add(self.pred_action_value,self.pred_object_value),2.0)
 
         summary_list = []        
         with tf.name_scope('delta'):
-            self.delta_a = self.target_action_value - self.pred_action_value
-            self.delta_o = self.target_object_value - self.pred_object_value
+            # self.delta_a = self.target_action_value - self.pred_action_value
+            # self.delta_o = self.target_object_value - self.pred_object_value
+            self.delta_a = self.target_qpred - self.pred_action_value
+            self.delta_o = self.target_qpred - self.pred_object_value            
             self.variable_summaries(self.delta_a, 'delta_a',summary_list)
             self.variable_summaries(self.delta_o, 'delta_o',summary_list)
             # self.delta = self.target_qpred - self.qpred
@@ -152,10 +155,10 @@ class DQN:
         self.summary_placeholders = {}
         self.summary_ops = {}
         if self.config.TUTORIAL_WORLD:
-            scalar_summary_tags = ['average.q_a','average.q_o','average_reward','average_numrewards','number_of_episodes','quest1_average_reward_cnt', \
+            scalar_summary_tags = ['average.q_a','average.q_o','average.q','average_reward','average_numrewards','number_of_episodes','quest1_average_reward_cnt', \
                     'quest2_average_reward_cnt','quest3_average_reward_cnt']
         else:
-            scalar_summary_tags = ['average.q_a','average.q_o','average_reward','average_numrewards','number_of_episodes','quest1_average_reward_cnt']
+            scalar_summary_tags = ['average.q_a','average.q_o','average.q','average_reward','average_numrewards','number_of_episodes','quest1_average_reward_cnt']
 
         for tag in scalar_summary_tags:
             self.summary_placeholders[tag] = tf.placeholder('float32', None, name=tag.replace(' ', '_'))
@@ -182,12 +185,13 @@ class DQN:
 
         self.optim = tf.train.AdamOptimizer(learning_rate = self.config.LEARNING_RATE).minimize(self.loss)
         self.saver = tf.train.Saver()        
+        
         if not(self.config.LOAD_WEIGHTS and self.load_weights()):
-            # self.merged = tf.merge_all_summaries()
-            self.merged = tf.merge_summary(summary_list)
-            self.train_writer = tf.train.SummaryWriter(self.config.summaries_dir + '/train/'+str(self.config.game_num),self.session.graph)            
             self.session.run(tf.initialize_all_variables())
 
+        # self.merged = tf.merge_all_summaries()
+        self.merged = tf.merge_summary(summary_list)
+        self.train_writer = tf.train.SummaryWriter(self.config.summaries_dir + '/train/'+str(self.config.game_num),self.session.graph)            
 
         self.copyTargetQNetworkOperation()
 

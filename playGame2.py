@@ -187,6 +187,7 @@ def playgame(config):
                 brain.inject_summary({
                     'average.q_a': avgEvalQValues_a,
                     'average.q_o': avgEvalQValues_o,
+                    'average.q': (0.5*avgEvalQValues_o+0.5*avgEvalQValues_a),
                     'average_reward':total_reward,
                     'average_num_pos_reward':nrewards,
                     'number_of_episodes':nepisodes,
@@ -198,6 +199,7 @@ def playgame(config):
                 brain.inject_summary({
                     'average.q_a': avgEvalQValues_a,
                     'average.q_o': avgEvalQValues_o,
+                    'average.q': (0.5*avgEvalQValues_o+0.5*avgEvalQValues_a),
                     'average_reward':total_reward,
                     'average_numrewards':nrewards,
                     'number_of_episodes':nepisodes,
