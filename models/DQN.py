@@ -185,7 +185,7 @@ class DQN:
 
         self.optim = tf.train.AdamOptimizer(learning_rate = self.config.LEARNING_RATE).minimize(self.loss)
         self.saver = tf.train.Saver()        
-        
+
         if not(self.config.LOAD_WEIGHTS and self.load_weights()):
             self.session.run(tf.initialize_all_variables())
 
@@ -337,7 +337,7 @@ class DQN:
             bestAction = np.where(QValue_action == np.max(QValue_action))[0]
             QValue_object = self.object_value.eval(feed_dict={self.stateInput:state_batch},session = self.session)[0]
             for i in range(QValue_object.size):
-                if i in availableObjects:
+                if i not in availableObjects:
                     QValue_object[i] = -sys.maxint - 1
             bestObject = np.where(QValue_object == np.max(QValue_object))[0]
             action_index = bestAction[random.randrange(0,bestAction.shape[0])]
