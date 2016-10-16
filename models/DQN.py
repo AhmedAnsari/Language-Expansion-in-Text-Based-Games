@@ -24,7 +24,7 @@ class DQN:
         #init replay memory
         self.session = tf.Session()
         self.config = config
-        
+
         self.memory = self.load_replay_memory(config)
         self.history = History()
         #init parameters
@@ -43,7 +43,7 @@ class DQN:
         word_embedsT = tf.nn.embedding_lookup(embed, self.stateInputT) # @codewalk: What is this line doing ?
         # print '$'*100
         self.initializer = tf.truncated_normal_initializer(stddev = 0.02)
-        # self.initializer = tf.random_uniform_initializer(minval=-1.0, maxval=1.0, seed=None, dtype=tf.float32)        
+        # self.initializer = tf.random_uniform_initializer(minval=-1.0, maxval=1.0, seed=None, dtype=tf.float32)
         # self.initializer = tf.contrib.layers.xavier_initializer()
         # print '$'*100
         self.cell = tf.nn.rnn_cell.LSTMCell(self.config.rnn_size, initializer = self.initializer, state_is_tuple=True)
@@ -86,12 +86,12 @@ class DQN:
 
         # self.qpred = tf.truediv(tf.add(self.pred_action_value,self.pred_object_value),2.0)
 
-        summary_list = []        
+        summary_list = []
         with tf.name_scope('delta'):
             # self.delta_a = self.target_action_value - self.pred_action_value
             # self.delta_o = self.target_object_value - self.pred_object_value
             self.delta_a = self.target_qpred - self.pred_action_value
-            self.delta_o = self.target_qpred - self.pred_object_value            
+            self.delta_o = self.target_qpred - self.pred_object_value
             self.variable_summaries(self.delta_a, 'delta_a',summary_list)
             self.variable_summaries(self.delta_o, 'delta_o',summary_list)
             # self.delta = self.target_qpred - self.qpred
@@ -104,7 +104,7 @@ class DQN:
                     self.quadratic_part_a = tf.minimum(abs(self.delta_a), config.maxDelta)
                     self.linear_part_a = abs(self.delta_a) - self.quadratic_part_a
 
-                    
+
                     self.quadratic_part_o = tf.minimum(abs(self.delta_o), config.maxDelta)
                     self.linear_part_o = abs(self.delta_o) - self.quadratic_part_o
 
@@ -125,20 +125,20 @@ class DQN:
                     self.variable_summaries(self.linear_part, 'linear_part',summary_list)
                     self.variable_summaries(self.quadratic_part, 'quadratic_part',summary_list)
 
-                    
 
-        
+
+
 
         with tf.name_scope('loss'):
             #self.loss = 0.5*tf.reduce_mean(tf.square(self.delta), name='loss')
-            # self.loss_a = tf.reduce_mean(0.5*tf.square(self.quadratic_part_a) + config.clipDelta * self.linear_part_a, name='loss_a')  
+            # self.loss_a = tf.reduce_mean(0.5*tf.square(self.quadratic_part_a) + config.clipDelta * self.linear_part_a, name='loss_a')
             # self.variable_summaries(self.loss_a, 'loss_a',summary_list)
 
-            # self.loss_o = tf.reduce_mean(0.5*tf.square(self.quadratic_part_o) + config.clipDelta * self.linear_part_o, name='loss_o')  
+            # self.loss_o = tf.reduce_mean(0.5*tf.square(self.quadratic_part_o) + config.clipDelta * self.linear_part_o, name='loss_o')
             # self.variable_summaries(self.loss_o, 'loss_o',summary_list)
 
-            self.loss = tf.reduce_mean(0.5*tf.square(self.quadratic_part) + config.clipDelta * self.linear_part, name='loss')  
-            self.variable_summaries(self.loss, 'loss',summary_list)            
+            self.loss = tf.reduce_mean(0.5*tf.square(self.quadratic_part) + config.clipDelta * self.linear_part, name='loss')
+            self.variable_summaries(self.loss, 'loss',summary_list)
 
         self.W = ["LSTMN", "linearN", "actionN", "objectN"]
         self.target_W = ["LSTMT", "linearT", "actionT", "objectT"]
@@ -184,14 +184,14 @@ class DQN:
         # self.optim2 = tf.train.AdamOptimizer(learning_rate = self.config.LEARNING_RATE).minimize(self.loss_o)
 
         self.optim = tf.train.AdamOptimizer(learning_rate = self.config.LEARNING_RATE).minimize(self.loss)
-        self.saver = tf.train.Saver()        
+        self.saver = tf.train.Saver()
 
         if not(self.config.LOAD_WEIGHTS and self.load_weights()):
             self.session.run(tf.initialize_all_variables())
 
         # self.merged = tf.merge_all_summaries()
         self.merged = tf.merge_summary(summary_list)
-        self.train_writer = tf.train.SummaryWriter(self.config.summaries_dir + '/train/'+str(self.config.game_num),self.session.graph)            
+        self.train_writer = tf.train.SummaryWriter(self.config.summaries_dir + '/train/'+str(self.config.game_num),self.session.graph)
 
         self.copyTargetQNetworkOperation()
 
@@ -213,7 +213,7 @@ class DQN:
         summary_str_lists = self.session.run([self.summary_ops[tag] for tag in tag_dict.keys()], { \
         self.summary_placeholders[tag]: value for tag, value in tag_dict.items()})
         for summary_str in summary_str_lists:
-            self.train_writer.add_summary(summary_str, self.timeStep)                    
+            self.train_writer.add_summary(summary_str, self.timeStep)
 
     def copyTargetQNetworkOperation(self):
         for i in range(len(self.W)):
@@ -285,7 +285,7 @@ class DQN:
             #         self.object_indicator : obj_batch,
             #         self.stateInput : state_batch
             #         })
-            # self.train_writer.add_summary(summary, self.timeStep)            
+            # self.train_writer.add_summary(summary, self.timeStep)
         else:
             _ = self.session.run([self.optim],feed_dict={
                     self.target_action_value : target_action_batch,
@@ -325,8 +325,8 @@ class DQN:
         object_index = 0
         curr_epsilon = self.epsilon
         if evaluate:
-            curr_epsilon = 0.05
-            
+            curr_epsilon = self.config.testepsilon
+
         if random.random() <= curr_epsilon:
             action_index = random.randrange(self.config.num_actions)
             object_index = random.randrange(self.config.num_objects)
@@ -351,28 +351,28 @@ class DQN:
         return action_index, object_index
 
     def getQValues(self, availableObjects, evaluate = False):
-            
+
         state_batch = np.zeros([self.config.batch_size, self.config.seq_length])
         state_batch[0] = self.history.get()
         QValue_action = self.action_valueT.eval(feed_dict={self.stateInputT:state_batch},session = self.session)[0]
         QValue_object = self.object_valueT.eval(feed_dict={self.stateInputT:state_batch},session = self.session)[0]
 
         return QValue_action, QValue_object
-    
+
     def load_weights(self):
         print 'inload weights'
         if not os.path.exists(os.getcwd()+'/Savednetworks'):
-            return False    
-        
+            return False
+
         list_dir = sorted(os.listdir(os.getcwd()+'/Savednetworks'))
         if not any(item.startswith('network-dqn') for item in list_dir):
             return False
-        
+
         print 'weights loaded'
-        self.saver.restore(self.session, os.getcwd()+'/Savednetworks/'+list_dir[-2])        
+        self.saver.restore(self.session, os.getcwd()+'/Savednetworks/'+list_dir[-2])
         return True
 
-    
+
     def load_replay_memory(self,config):
         if os.path.exists(config.model_dir+'/replay_file.save'):
             fp = open(config.model_dir+'/replay_file.save','rb')
@@ -381,5 +381,5 @@ class DQN:
         else:
             memory = ReplayMemory(config)
         return memory
-          
+
 

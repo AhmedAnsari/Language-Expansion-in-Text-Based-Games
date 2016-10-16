@@ -11,7 +11,7 @@ class Config:
         self.summaries_dir = os.getcwd()+'/logs/'
 
         #dqn
-        # self.vocab_size = 
+        # self.vocab_size =
         self.state_dim = 85 #used for for bow case
         self.vocab_size = 100
         self.embed_dim = 20 #@Ansari check this
@@ -41,14 +41,14 @@ class Config:
         self.NUM_EVAL_STEPS = self.EVAL
         self.SAMPLE_STATES = 64
         self.device = '/cpu:0'
-        
+
 
         self.TUTORIAL_WORLD = False
         self.game_num = 1
+        self.testepsilon = 0.05
 
-        
         self.temperature =0.01
-    
+
     def setnumactions(self,numactions):
         self.num_actions = numactions
         self.NUM_ACTIONS = numactions
@@ -56,5 +56,5 @@ class Config:
         self.num_objects = numobjects
         self.NUM_OBJECTS = numobjects
     def setvocabsize(self,vocab_size):
-        self.vocab_size = vocab_size        
+        self.vocab_size = vocab_size
 
