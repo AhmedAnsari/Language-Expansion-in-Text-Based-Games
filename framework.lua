@@ -277,7 +277,7 @@ end
 function writeSymbolMapping(num)
 	--print("I am in text to ordered")
 	-- print(symbol_mapping)
-	file = io.open("symbolMapping" .. string(num) ..".txt", "w")
+	file = io.open("symbolMapping" .. tostring(num) ..".txt", "w")
 	for key, value in pairs(symbol_mapping) do
 		file:write(key, " ", value, "\n")
 	end
