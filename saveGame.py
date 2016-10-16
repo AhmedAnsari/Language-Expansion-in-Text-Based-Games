@@ -3,19 +3,33 @@
 # Author: ghulamahmedansari,Rakesh Menon
 # -------------------------
 
-import os
+import sys
 from models.DQN import DQN
 # from models.bow_DQN import DQN
 # from models.lstdq import DQN
 import numpy as np
-import cPickle as cpickle
 from models.config import Config
 from tqdm import tqdm
-import random
-import sys
 from environment import Environment
 
+
+def convert_state(state,dic1,dic2):
+    out = map(lambda x: int(dic2[dic1[str(x)]]),state)
+    return out
 def savegame(config):
+    fp = open('symbolMapping'+str(sys.argv[1])+'.txt','r')
+    data = fp.read().split('\n')
+    spd = [data_.split(' ')[::-1] for data_ in data]
+    dic_local = dict(spd[0:-1])
+    dic_local['0'] = 'null'
+    fp.close()
+    
+    fp = open('symbolMapping.txt','r')
+    data = fp.read().split('\n')
+    spd = [data_.split(' ')for data_ in data]
+    dic_global = dict(spd[0:-1])
+    dic_global['null']='0'
+    fp.close()    
     # Step 1: init Game
     env = Environment(config.game_num) #1 is for main game 2 is for evaluation
     ###################
@@ -25,7 +39,6 @@ def savegame(config):
     config.setnumactions(actions)
     config.setnumobjects(objects)
     config.setvocabsize(env.vocab_size())
-
     brain = DQN(config)
 
     # checkStates = None
@@ -53,7 +66,7 @@ def savegame(config):
         action_indicator[action_index] = 1
         object_indicator[object_index] = 1
         # print state
-        memory.append((state, Qactions, Qobjects))
+        memory.append((convert_state(state, dic_local, dic_global), Qactions, Qobjects))
         #act
         nextstate,reward,terminal, availableObjects = env.step(action_index,object_index)
         total_reward += reward
