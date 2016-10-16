@@ -42,7 +42,7 @@ def savegame(config):
     fp = open("lstm_100_embeddings.txt","w")
     for i in range(config.vocab_size-1):
         state = np.zeros([config.batch_size,config.seq_length])
-        state[0,-1]=i
+        state[:,0]=i
         embedding = brain.output_embedT.eval(feed_dict={brain.stateInputT : state},session=brain.session)[0,0,:]
         print >> fp, dic[i]
         for element in embedding:
