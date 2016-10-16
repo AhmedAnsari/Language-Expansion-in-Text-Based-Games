@@ -44,8 +44,10 @@ def savegame(config):
         state = np.zeros([config.batch_size,config.seq_length])
         state[0,-1]=i
         embedding = brain.output_embedT.eval(feed_dict={brain.stateInputT : state},session=brain.session)[0,0,:]
-        print >> fp,dic[i]
-        print >> fp,embedding
+        print >> fp, dic[i]
+        for element in embedding:
+            print >> fp, element,
+        print >> fp
     brain.session.close()
 
 def main():
