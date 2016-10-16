@@ -110,6 +110,7 @@ def main():
     config = Config()
  #   config.test()
     config.game_num = sys.argv[1]
+    config.testepsilon = 0
     savegame(config)
 
 if __name__ == '__main__':
