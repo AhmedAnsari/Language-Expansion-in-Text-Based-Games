@@ -23,13 +23,13 @@ def savegame(config):
     dic_local = dict(spd[0:-1])
     dic_local['0'] = 'null'
     fp.close()
-    
-    fp = open('symbolMapping.txt','r')
+
+    fp = open('symbolMapping5.txt','r')
     data = fp.read().split('\n')
     spd = [data_.split(' ')for data_ in data]
     dic_global = dict(spd[0:-1])
     dic_global['null']='0'
-    fp.close()    
+    fp.close()
     # Step 1: init Game
     env = Environment(config.game_num) #1 is for main game 2 is for evaluation
     ###################
@@ -94,12 +94,12 @@ def savegame(config):
         if ((terminal) or ((episode_length % config.max_episode_length) == 0)):
             num_episodes += 1
             with open("saver_reward.txt", "a") as fp:
-                print >> fp, (total_reward / (num_episodes * 1.0))    
+                print >> fp, (total_reward / (num_episodes * 1.0))
             env.START_NEW_GAME = True
-            
+
         pbar.update(1)
-            
-            
+
+
         if (brain.timeStep) > config.MAX_FRAMES:
             brain.train_writer.close()
             break
