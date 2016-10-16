@@ -21,14 +21,14 @@ def savegame(config):
     data = fp.read().split('\n')
     spd = [data_.split(' ')[::-1] for data_ in data]
     dic_local = dict(spd[0:-1])
-    dic_local['0'] = 'null'
+    dic_local['0'] = 'NULL'
     fp.close()
     
     fp = open('symbolMapping.txt','r')
     data = fp.read().split('\n')
     spd = [data_.split(' ')for data_ in data]
     dic_global = dict(spd[0:-1])
-    dic_global['null']='0'
+    dic_global['NULL']='0'
     fp.close()    
     # Step 1: init Game
     env = Environment(config.game_num) #1 is for main game 2 is for evaluation

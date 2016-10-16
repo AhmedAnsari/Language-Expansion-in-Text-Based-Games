@@ -1,7 +1,7 @@
-from sklearn.manifold import TSNE
-import matplotlib.pyplot as plt
+# from sklearn.manifold import TSNE
+# import matplotlib.pyplot as plt
 
-fp = open("lstm_100_embeddings.txt", "r")
+fp = open("tsne.txt", "r")
 data = fp.read()
 fp.close()
 splitdata = data.split("\n")
@@ -18,7 +18,7 @@ for i in range(length):
 			row.append(float(j))
 		embedding.append(row)
 
-model = TSNE(n_components=2, random_state=0, n_iter = 2000, perplexity = 50)
+model = TSNE(n_components=2, random_state=1, n_iter = 5000)
 embeds = model.fit_transform(embedding)
 # xmin = embedding[0][0]
 # xmax = embedding[0][0]
