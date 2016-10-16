@@ -21,7 +21,7 @@ quest_checklist = {}
 mislead_quest_checklist = {}
 rooms = {'Living', 'Garden', 'Kitchen','Bedroom'}
 
-actions = {"eat", "sleep", "watch", "exercise", "go"} 
+actions = {"eat", "sleep", "watch", "exercise", "go"}
 objects = {'north','south','east','west'} -- read rest from build file
 -- order in build file: tv, bike, apple, bed
 
@@ -35,8 +35,8 @@ local current_room_description = ""
 
 
 
--- 	getActions = getActions, 
--- 	getObjects = getObjects, 
+-- 	getActions = getActions,
+-- 	getObjects = getObjects,
 -- 	step = step_game,
 -- 	newGame = newGame,
 -- 	vector_function = vector_function
@@ -87,12 +87,12 @@ function interact(counter)
 		available_objects[i] = i - 1
 	end
 	available_objects_string = concatString(available_objects)
-	while(1) 
+	while(1)
 	do
-		--print("I came in while")	
+		--print("I came in while")
 		input = socket:recv()
 		--
-		--print(input)	
+		--print(input)
 		t = mysplit(input, "#")
 		s = t[1]
 		if s == "getActions" then
@@ -116,7 +116,7 @@ function interact(counter)
 		end
 	end
 	socket:close() --@Sagar Is this necessary
-	ctx:term()	--@Sagar Is this necessary	
+	ctx:term()	--@Sagar Is this necessary
 end
 
 
@@ -131,7 +131,7 @@ function random_teleport()
 	end
 end
 
-function get_quest_text(quest_num) 	
+function get_quest_text(quest_num)
 	return quests_mislead[mislead_quest_checklist[1]] .. ' now but ' .. quests[quest_num] ..' now.' --randomized complex quests
 end
 
@@ -156,8 +156,8 @@ end
 
 function login(user, password)
 	local num_rooms = 4
-	local pre_login_text = data_in()	
-	print(pre_login_text)	
+	local pre_login_text = data_in()
+	print(pre_login_text)
 	sleep(1)
 	data_out('connect ' .. user .. ' ' .. password)
 end
@@ -183,7 +183,7 @@ function parse_game_output(text)
 		reward = DEFAULT_REWARD
 	end
 	--print(text_to_agent)
-	return text_to_agent, reward	
+	return text_to_agent, reward
 end
 
 
@@ -191,7 +191,7 @@ end
 function step_game(action_index, object_index, gameLogger)
 	local command = build_command(actions[action_index], objects[object_index], gameLogger)
 	data_out(command)
-	if DEBUG then 
+	if DEBUG then
 		print(actions[action_index] .. ' ' .. objects[object_index])
 	end
 	STEP_COUNT = STEP_COUNT + 1
@@ -226,11 +226,11 @@ end
 function parseLine( list_words, start_index)
 	-- parse line to update symbols and symbol_mapping
 	-- IMP: make sure we're using simple english - ignores punctuation, etc.
-	local sindx	
+	local sindx
 	start_index = start_index or 1
-	for i=start_index,#list_words do			
+	for i=start_index,#list_words do
 		word = split(list_words[i], "%a+")[1]
-		word = word:lower()	
+		word = word:lower()
 		if symbol_mapping[word] == nil then
 			sindx = #symbols + 1
 			symbols[sindx] = word
@@ -252,7 +252,7 @@ function addExtraWordsToVocab()
 			sindx = #symbols + 1
 			symbols[sindx] = word
 			symbol_mapping[word] = sindx
-		end	
+		end
 	end
 end
 
@@ -266,7 +266,7 @@ function makeSymbolMapping(filename)
 		if list_words[1] == '@detail' or list_words[1] == '@desc' then
 			parseLine(list_words, 4)
 		elseif list_words[1] == '@create/drop' then
-			-- add to actionable objects			
+			-- add to actionable objects
 			table.insert(objects, split(list_words[2], "%a+")[1])
 		end
 	end
@@ -274,10 +274,10 @@ function makeSymbolMapping(filename)
 	addExtraWordsToVocab()
 end
 
-function writeSymbolMapping()
+function writeSymbolMapping(num)
 	--print("I am in text to ordered")
 	-- print(symbol_mapping)
-	file = io.open("symbolMapping.txt", "w")
+	file = io.open("symbolMapping" .. string(num) ..".txt", "w")
 	for key, value in pairs(symbol_mapping) do
 		file:write(key, " ", value, "\n")
 	end
@@ -295,11 +295,11 @@ function convert_text_to_bow(input_text)
 	for j, line in pairs(input_text) do
 		line = input_text[j]
 		local list_words = split(line, "%a+")
-		for i=1,#list_words do			
+		for i=1,#list_words do
 			local word = list_words[i]
 			word = word:lower()
 			--ignore words not in vocab
-			if symbol_mapping[word] then	
+			if symbol_mapping[word] then
 				vector[symbol_mapping[word]] = vector[symbol_mapping[word]] + 1
 			else
 				print(word .. ' not in vocab')
@@ -319,13 +319,13 @@ function convert_text_to_bigram(input_text)
 	for j, line in pairs(input_text) do
 		line = input_text[j]
 		local list_words = split(line, "%a+")
-		for i=1,#list_words-1 do			
+		for i=1,#list_words-1 do
 			local word = list_words[i]
 			word = word:lower()
 			next_word = list_words[i+1]:lower()
 			--ignore words not in vocab
-			if symbol_mapping[word] and symbol_mapping[next_word] then	
-				vector[(symbol_mapping[word]-1)* (#symbols) + symbol_mapping[next_word]] 
+			if symbol_mapping[word] and symbol_mapping[next_word] then
+				vector[(symbol_mapping[word]-1)* (#symbols) + symbol_mapping[next_word]]
 					= vector[(symbol_mapping[word]-1)* (#symbols) + symbol_mapping[next_word]]  + 1
 			else
 				print(word .. ' not in vocab')
@@ -346,12 +346,12 @@ function convert_text_to_bow2(input_text)
 	for j=1, 2 do
 		line = input_text[j]
 		local list_words = split(line, "%a+")
-		for i=1,#list_words do			
+		for i=1,#list_words do
 			local word = list_words[i]
 			word = word:lower()
 			--ignore words not in vocab
-			if symbol_mapping[word] then	
-				vector[(j-1)*(#symbols) + symbol_mapping[word]] 
+			if symbol_mapping[word] then
+				vector[(j-1)*(#symbols) + symbol_mapping[word]]
 						= vector[(j-1)*(#symbols) + symbol_mapping[word]] + 1
 			else
 				print(word .. ' not in vocab')
@@ -378,16 +378,16 @@ function convert_text_to_ordered_list(input_text)
 	for j=1, 2 do
 		line = input_text[j]
 		local list_words = split(line, "%a+")
-		for i=1,#list_words do			
+		for i=1,#list_words do
 			local word = list_words[i]
 			word = word:lower()
 			if REVERSE then cnt2 = STATE_DIM+1-cnt else cnt2 = cnt end
 			--ignore words not in vocab
-			if symbol_mapping[word] then	
+			if symbol_mapping[word] then
 				vector[cnt2] = symbol_mapping[word]
 			else
 				print(word .. ' not in vocab')
-			end 
+			end
 			cnt=cnt+1
 		end
 	end
@@ -406,12 +406,12 @@ function convert_text_to_ordered_list2(input_text)
 		cnt=1
 		line = input_text[j]
 		local list_words = split(line, "%a+")
-		for i=1,#list_words do			
+		for i=1,#list_words do
 			local word = list_words[i]
 			word = word:lower()
 			if REVERSE then cnt2 = STATE_DIM+1-cnt else cnt2 = cnt end
 			--ignore words not in vocab
-			if symbol_mapping[word] then					
+			if symbol_mapping[word] then
 				vector[(j-1)*STATE_DIM + cnt2] = symbol_mapping[word]
 			else
 				print(word .. ' not in vocab')
@@ -433,25 +433,25 @@ elseif BIGRAM then
 	vector_function = convert_text_to_bigram
 else
 	print (RECURRENT)
-	vector_function = convert_text_to_bow	
+	vector_function = convert_text_to_bow
 end
 -------------------------------------------------------------------
 
 function getState(logger, print_on)
 	local terminal = (STEP_COUNT >= MAX_STEPS)
 	local inData = data_in()
-	while #inData == 0 or not string.match(inData[#inData],'<EOM>') do	
+	while #inData == 0 or not string.match(inData[#inData],'<EOM>') do
 		TableConcat(inData, data_in())
 	end
 
 	data_out('look')
 	local inData2 = data_in()
-	while #inData2 == 0 or not string.match(inData2[#inData2],'<EOM>') do	
+	while #inData2 == 0 or not string.match(inData2[#inData2],'<EOM>') do
 		TableConcat(inData2, data_in())
 	end
 	current_room_description = inData2[1]
 
-	local text, reward = parse_game_output(inData)		
+	local text, reward = parse_game_output(inData)
 	if DEBUG or print_on then
 		print(text, reward)
 		sleep(0.1)
@@ -461,8 +461,8 @@ function getState(logger, print_on)
 		end
 	end
 	if reward >= 1 then
-		quest_checklist = underscore.rest(quest_checklist) --remove first element in table		
-		mislead_quest_checklist = underscore.rest(mislead_quest_checklist) --remove first element in table		
+		quest_checklist = underscore.rest(quest_checklist) --remove first element in table
+		mislead_quest_checklist = underscore.rest(mislead_quest_checklist) --remove first element in table
 		if #quest_checklist == 0 then
 			--quest has been succesfully finished
 			terminal = true
@@ -509,9 +509,9 @@ function getObjectsnumber()
 end
 return {
 	makeSymbolMapping = makeSymbolMapping,
-	getActions = getActions, 
-	getObjects = getObjects, 
-	getState = getState, 
+	getActions = getActions,
+	getObjects = getObjects,
+	getState = getState,
 	step = step_game,
 	newGame = newGame,
 	nextRandomGame = nextRandomGame,
