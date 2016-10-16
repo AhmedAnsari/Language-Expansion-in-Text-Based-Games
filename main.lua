@@ -9,13 +9,13 @@ print(port)
 client_connect(port)
 login('root', 'root')
 counter = tonumber(arg[1])%4
-if arg[1]==1 then
+if arg[1]=='1' then
     framework.makeSymbolMapping("../text-world/evennia/contrib/text_sims/build.ev")
-elseif arg[1]==2 then
+elseif arg[1]=='2' then
     framework.makeSymbolMapping("../text-world/evennia/contrib/text_sims3/build.ev")
-elseif arg[1]==3 then
+elseif arg[1]=='3' then
     framework.makeSymbolMapping("../text-world/evennia/contrib/text_sims4/build.ev")
-elseif arg[1]==5 then
+elseif arg[1]=='5' then
     framework.makeSymbolMapping("../text-world/evennia/contrib/text_sims/build.ev")
     framework.makeSymbolMapping("../text-world/evennia/contrib/text_sims3/build.ev")
     framework.makeSymbolMapping("../text-world/evennia/contrib/text_sims4/build.ev")
