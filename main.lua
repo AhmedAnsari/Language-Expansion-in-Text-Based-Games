@@ -19,6 +19,7 @@ elseif arg[1]==4 then
     framework.makeSymbolMapping("../text-world/evennia/contrib/text_sims/build.ev")
     framework.makeSymbolMapping("../text-world/evennia/contrib/text_sims3/build.ev")
     framework.makeSymbolMapping("../text-world/evennia/contrib/text_sims4/build.ev")
+    counter = 1
 end
 framework.writeSymbolMapping(arg[1])
 print("#symbols", #symbols)
