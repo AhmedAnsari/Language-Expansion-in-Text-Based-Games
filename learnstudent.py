@@ -1,18 +1,33 @@
-import os
 from models.student import student
 from utils import load_data
-
-
 import numpy as np
-import cPickle as cpickle
 from models.config import Config
 from tqdm import tqdm
-import random
 import sys
 from environment import Environment
 
+#global Dictionaries for state space conversion
+fp = open('symbolMapping'+str(sys.argv[1])+'.txt','r')
+data = fp.read().split('\n')
+spd = [data_.split(' ')[::-1] for data_ in data]
+dic_local = dict(spd[0:-1])
+dic_local['0'] = 'NULL'
+fp.close()
+
+fp = open('symbolMapping5.txt','r')
+data = fp.read().split('\n')
+spd = [data_.split(' ')for data_ in data]
+dic_global = dict(spd[0:-1])
+dic_global['NULL']='0'
+fp.close()
+
+def convert_state(state):
+    out = map(lambda x: int(dic_global[dic_local[str(x)]]),state)
+    return out
+
 def evaluate(brain,env,config):
     state, reward, terminal, available_objects = env.newGame()
+    state = convert_state(state)
     brain.history.add(state)
 
     total_reward = 0
@@ -37,7 +52,7 @@ def evaluate(brain,env,config):
 
         ##-- Play game in test mode (episodes don't end when losing a life)
         nextstate,reward,terminal, available_objects = env.step(action_index,object_index)
-
+        nextstate = convert_state(nextstate)
         #observe
         brain.history.add(nextstate)
         state = nextstate
@@ -66,6 +81,7 @@ def evaluate(brain,env,config):
             episode_reward = 0
             nepisodes = nepisodes + 1
             state, reward, terminal, available_objects = env.newGame()
+            state = convert_state(state)
             brain.history.add(state)
 
         pbar.update(1)
@@ -83,13 +99,6 @@ def evaluate(brain,env,config):
 
 def reader(fileName):
     data = load_data(fileName)
-    # print len(data[0])
-    # print len(data[1])
-    # print len(data[2])
-    # memory = []
-    # for i in range(len(fileName)):
-    #     memory.append([data[0][i], data[1][i], data[2][i]])
-    # return memory
     return zip (data[0],data[1],data[2])
 
 def learnstudent(config):
@@ -148,12 +157,10 @@ def learnstudent(config):
         if (brain.timeStep) > config.MAX_FRAMES:
             brain.train_writer.close()
             break
-
     brain.session.close()
 
 def main():
     config = Config()
- #   config.test()
     learnstudent(config)
 
 if __name__ == '__main__':
