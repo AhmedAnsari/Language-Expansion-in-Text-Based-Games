@@ -21,8 +21,10 @@ class student:
         self.data = {}
         self.history = History()
         self.BATCH_SIZE = 256
+        
+        #set config.final_vocab_size manually
+        embed = tf.Variable(tf.random_uniform([self.config.final_vocab_size, self.config.embed_dim], -1.0, 1.0),name="embed")
 
-        embed = tf.Variable(tf.random_uniform([self.config.vocab_size, self.config.embed_dim], -1.0, 1.0),name="embed")
         word_embeds = tf.nn.embedding_lookup(embed, self.stateInput)
         self.initializer = tf.truncated_normal_initializer(stddev = 0.02)
         self.cell = tf.nn.rnn_cell.LSTMCell(self.config.rnn_size, initializer = self.initializer, state_is_tuple=True)
