@@ -46,8 +46,9 @@ class Config:
         self.TUTORIAL_WORLD = False
         self.game_num = 1
         self.testepsilon = 0.05
-
+        #for student
         self.temperature =0.01
+        self.final_vocab_size = 160
 
     def setnumactions(self,numactions):
         self.num_actions = numactions

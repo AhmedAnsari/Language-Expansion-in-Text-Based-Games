@@ -32,7 +32,7 @@ def savegame(config):
     # checkStates = None
     #adding progress bar for training
     dic = {}
-    with open("symbolMapping5.txt", 'r') as fp:
+    with open("symbolMapping1.txt", 'r') as fp:
         data = fp.read().split('\n')
         for i in range(len(data) - 1):
             splitdata = data[i].split(' ')
@@ -41,7 +41,7 @@ def savegame(config):
 
     fp = open("student_embeddings.txt","w")
     for i in range(config.vocab_size-1):
-        state = np.zeros([config.batch_size,config.seq_length])
+        state = np.zeros([256,config.seq_length])
         state[:,0]=i
         embedding = brain.output_embed.eval(feed_dict={brain.stateInput : state},session=brain.session)[0,0,:]
         print >> fp, dic[i]
