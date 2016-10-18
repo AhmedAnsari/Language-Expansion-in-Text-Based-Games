@@ -17,43 +17,93 @@ from environment import Environment
 
 
 def savegame(config):
-    # Step 1: init Game
-    env = Environment(config.game_num) #1 is for main game 2 is for evaluation
-    ###################
+    fp = open('symbolMapping1.txt','r')
+    data = fp.read().split('\n')
+    spd = [data_.split(' ')[::-1] for data_ in data]
+    dic1 = dict(spd[0:-1])
+    dic1['0'] = 'NULL'
+    fp.close()
+
+    fp = open('symbolMapping2.txt','r')
+    data = fp.read().split('\n')
+    spd = [data_.split(' ')[::-1] for data_ in data]
+    dic2 = dict(spd[0:-1])
+    dic2['0'] = 'NULL'
+    fp.close()
+
+    fp = open('symbolMapping3.txt','r')
+    data = fp.read().split('\n')
+    spd = [data_.split(' ')[::-1] for data_ in data]
+    dic3 = dict(spd[0:-1])
+    dic3['0'] = 'NULL'
+    fp.close()
+
+    fp = open('symbolMapping5.txt','r')
+    data = fp.read().split('\n')
+    spd = [data_.split(' ')for data_ in data]
+    dic_global = dict(spd[0:-1])
+    dic_global['NULL']='0'
+    fp.close()
+
     # Step 2: init DQN
-    actions = env.action_size()
-    objects = env.object_size()
+    actions = 5 #manually setting to avid creating env everytime
+    objects = 8 #manually setting to avid creating env everytime
     config.setnumactions(actions)
     config.setnumobjects(objects)
-    config.setvocabsize(env.vocab_size())
-
+    # config.setvocabsize(env.vocab_size())
     brain = student(config)
 
-    # checkStates = None
-    #adding progress bar for training
-    dic = {}
-    with open("symbolMapping1.txt", 'r') as fp:
-        data = fp.read().split('\n')
-        for i in range(len(data) - 1):
-            splitdata = data[i].split(' ')
-            dic[int(splitdata[1])] = splitdata[0]
-    dic[0] = "NULL"
 
-    fp = open("student_embeddings.txt","w")
-    for i in range(config.vocab_size-1):
+    fp = open("student_combined_embeddings.txt","w")
+    for word in dic_global.keys():
         state = np.zeros([256,config.seq_length])
-        state[:,0]=i
+        state[:,0]=int(dic_global[word])
         embedding = brain.output_embed.eval(feed_dict={brain.stateInput : state},session=brain.session)[0,0,:]
-        print >> fp, dic[i]
+        print >> fp, word
         for element in embedding:
             print >> fp, element,
         print >> fp
+    fp.close()
+
+    fp = open("student_game1_embeddings.txt","w")
+    for index in dic1.keys():
+        state = np.zeros([256,config.seq_length])
+        state[:,0]=int(dic_global[dic1[index]])
+        embedding = brain.output_embed.eval(feed_dict={brain.stateInput : state},session=brain.session)[0,0,:]
+        print >> fp, dic1[index]
+        for element in embedding:
+            print >> fp, element,
+        print >> fp
+    fp.close()        
+
+    fp = open("student_game2_embeddings.txt","w")
+    for index in dic2.keys():
+        state = np.zeros([256,config.seq_length])
+        state[:,0]=int(dic_global[dic2[index]])
+        embedding = brain.output_embed.eval(feed_dict={brain.stateInput : state},session=brain.session)[0,0,:]
+        print >> fp, dic2[index]
+        for element in embedding:
+            print >> fp, element,
+        print >> fp
+    fp.close()        
+
+    fp = open("student_game3_embeddings.txt","w")
+    for index in dic3.keys():
+        state = np.zeros([256,config.seq_length])
+        state[:,0]=int(dic_global[dic3[index]])
+        embedding = brain.output_embed.eval(feed_dict={brain.stateInput : state},session=brain.session)[0,0,:]
+        print >> fp, dic3[index]
+        for element in embedding:
+            print >> fp, element,
+        print >> fp
+    fp.close()            
+
     brain.session.close()
 
 def main():
     config = Config()
  #   config.test()
-    config.game_num = sys.argv[1]
+    # config.game_num = sys.argv[1]
     savegame(config)
 
 if __name__ == '__main__':

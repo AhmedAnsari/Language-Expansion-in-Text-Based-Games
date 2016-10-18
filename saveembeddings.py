@@ -32,14 +32,14 @@ def savegame(config):
     # checkStates = None
     #adding progress bar for training
     dic = {}
-    with open("symbolMapping5.txt", 'r') as fp:
+    with open("symbolMapping"+str(argv[1])+".txt", 'r') as fp:
         data = fp.read().split('\n')
         for i in range(len(data) - 1):
             splitdata = data[i].split(' ')
             dic[int(splitdata[1])] = splitdata[0]
     dic[0] = "NULL"
 
-    fp = open("lstm_100_embeddings.txt","w")
+    fp = open("teacher"+str(atgv[1])+"_embeddings.txt","w")
     for i in range(config.vocab_size-1):
         state = np.zeros([config.batch_size,config.seq_length])
         state[:,0]=i
