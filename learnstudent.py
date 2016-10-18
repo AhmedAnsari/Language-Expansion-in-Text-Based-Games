@@ -128,6 +128,13 @@ def learnstudent(config):
         #for evaluating qvalues
         if (brain.timeStep % 100) and (brain.timeStep != 0):
             env_eval = env
+
+
+            # save last network
+            if not os.path.exists(os.getcwd()+'/StudentSavednetworks'):
+                os.makedirs(os.getcwd()+'/StudentSavednetworks')
+            brain.saver.save(brain.session, os.getcwd()+'/StudentSavednetworks'+'network' + '-student', global_step = brain.timeStep)
+
             if config.TUTORIAL_WORLD:
                 total_reward, nrewards, nepisodes, quest1_reward_cnt, quest2_reward_cnt, quest3_reward_cnt = evaluate(brain, env_eval, config)
             else:

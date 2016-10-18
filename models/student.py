@@ -21,7 +21,7 @@ class student:
         self.data = {}
         self.history = History()
         self.BATCH_SIZE = 256
-        
+
         #set config.final_vocab_size manually
         embed = tf.Variable(tf.random_uniform([self.config.final_vocab_size, self.config.embed_dim], -1.0, 1.0),name="embed")
 
@@ -143,14 +143,6 @@ class student:
                     self.target_object_value : target_object_batch,
                     self.stateInput : state_batch
                     },session = self.session)
-
-        # save network every 10000 iteration
-        if self.timeStep % 2000 == 0:
-            if not os.path.exists(os.getcwd()+'/StudentSavednetworks'):
-                os.makedirs(os.getcwd()+'/StudentSavednetworks')
-            self.saver.save(self.session, os.getcwd()+'/StudentSavednetworks/'+'network' + '-student', global_step = self.timeStep)
-
-
 
     def load_weights(self):
         print 'inload weights'
