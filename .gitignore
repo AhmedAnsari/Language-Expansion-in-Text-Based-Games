@@ -53,3 +53,4 @@ backups/logs
 *.pdf
 *.png
 StudentSavednetworks
+.framework.lua.swp
