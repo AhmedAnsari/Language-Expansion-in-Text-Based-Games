@@ -57,22 +57,24 @@ def savegame(config):
             episode_length = 0
             env.START_NEW_GAME = False
             state, reward, terminal, availableObjects = env.newGame()
+            state = convert_state(state,dic_local,dic_global)
             brain.history.add(state)
         action_indicator = np.zeros(actions)
         object_indicator = np.zeros(objects)
         #predict
         action_index,object_index = brain.getAction(availableObjects, True)
-        Qactions, Qobjects = brain.getQValues(availableObjects)
+        
         action_indicator[action_index] = 1
         object_indicator[object_index] = 1
      
      
         #act
         nextstate,reward,terminal, availableObjects = env.step(action_index,object_index)
+        nextstate =  convert_state(nextstate,dic_local,dic_global)
         total_reward += reward
         episode_length += 1
         #observe
-        brain.setPerception(state, reward, action_indicator, object_indicator, nextstate, terminal, True)
+        brain.history.add(nextstate)
         state = nextstate
 
 
@@ -93,7 +95,6 @@ def savegame(config):
 
 def main():
     config = Config()
- #   config.test()
     config.game_num = sys.argv[1]
     config.testepsilon = 0
     savegame(config)
