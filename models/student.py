@@ -108,8 +108,8 @@ class student:
 
 
         self.saver = tf.train.Saver()
-        if not(self.config.LOAD_WEIGHTS and self.load_weights()):
-            self.train_writer = tf.train.SummaryWriter(self.config.summaries_dir + '/train/'+str(self.config.game_num),self.session.graph)
+        self.train_writer = tf.train.SummaryWriter(self.config.summaries_dir + '/train/'+str(self.config.game_num),self.session.graph)
+        if not(self.config.LOAD_WEIGHTS and self.load_weights()):            
             self.session.run(tf.initialize_all_variables())
 
 
