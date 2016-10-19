@@ -5,6 +5,7 @@ from models.config import Config
 from tqdm import tqdm
 import sys
 from environment import Environment
+import os
 
 #global Dictionaries for state space conversion
 fp = open('symbolMapping'+str(sys.argv[1])+'.txt','r')
