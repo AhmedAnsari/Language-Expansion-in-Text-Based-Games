@@ -15,7 +15,7 @@ from history import History
 from replay_memory import ReplayMemory
 import cPickle as pickle
 
-class DQN:
+class MDQN:
     def __init__(self, config):
 
         #init replay memory
@@ -157,11 +157,8 @@ class DQN:
 
         self.summary_placeholders = {}
         self.summary_ops = {}
-        if self.config.TUTORIAL_WORLD:
-            scalar_summary_tags = ['average.q_a','average.q_o','average.q','average_reward','average_numrewards','number_of_episodes','quest1_average_reward_cnt', \
-                    'quest2_average_reward_cnt','quest3_average_reward_cnt']
-        else:
-            scalar_summary_tags = ['average.q_a','average.q_o','average.q','average_reward','average_numrewards','number_of_episodes','quest1_average_reward_cnt']
+
+        scalar_summary_tags = ['average.q_a','average.q_o','average.q','average_reward','average_numrewards','number_of_episodes','quest1_average_reward_cnt']
 
         for tag in scalar_summary_tags:
             self.summary_placeholders[tag] = tf.placeholder('float32', None, name=tag.replace(' ', '_'))
@@ -223,8 +220,8 @@ class DQN:
         # Step 2: calculate y
         target_action_batch = []
         target_object_batch = []
-        QValue_action_batch = self.action_valueT.eval(feed_dict={self.stateInputT:nextState_batch,self.controller_id = game_id},session = self.session)
-        QValue_object_batch = self.object_valueT.eval(feed_dict={self.stateInputT:nextState_batch,self.controller_id = game_id},session = self.session)
+        QValue_action_batch = self.action_valueT.eval(feed_dict={self.stateInputT:nextState_batch,self.controller_id : game_id},session = self.session)
+        QValue_object_batch = self.object_valueT.eval(feed_dict={self.stateInputT:nextState_batch,self.controller_id : game_id},session = self.session)
 
 
         for i in range(0,self.config.BATCH_SIZE):
@@ -242,7 +239,7 @@ class DQN:
                     self.action_indicator : action_batch,
                     self.object_indicator : obj_batch,
                     self.stateInput : state_batch,
-                    self.controller_id = game_id
+                    self.controller_id : game_id
                     })
             self.train_writer.add_summary(summary, self.timeStep[game_id])
 
@@ -253,7 +250,7 @@ class DQN:
                     self.action_indicator : action_batch,
                     self.object_indicator : obj_batch,
                     self.stateInput : state_batch,
-                    self.controller_id = game_id
+                    self.controller_id : game_id
                     })
 
 
@@ -270,7 +267,7 @@ class DQN:
 
         if not evaluate:
             self.timeStep[game_id] += 1
-        if self.timeStep[game_id] % self.config.UPDATE_FREQUENCY == 0:
+        if self.timeStep[2] % self.config.UPDATE_FREQUENCY == 0:
             self.copyTargetQNetworkOperation()
 
 
@@ -287,9 +284,9 @@ class DQN:
         else:
             state_batch = np.zeros([self.config.batch_size, self.config.seq_length])
             state_batch[0] = self.history[game_id].get()
-            QValue_action = self.action_value.eval(feed_dict={self.stateInput:state_batch,self.controller_id = game_id},session = self.session)[0]
+            QValue_action = self.action_value.eval(feed_dict={self.stateInput:state_batch,self.controller_id : game_id},session = self.session)[0]
             bestAction = np.where(QValue_action == np.max(QValue_action))[0]
-            QValue_object = self.object_value.eval(feed_dict={self.stateInput:state_batch,self.controller_id = game_id},session = self.session)[0]
+            QValue_object = self.object_value.eval(feed_dict={self.stateInput:state_batch,self.controller_id : game_id},session = self.session)[0]
             for i in range(QValue_object.size):
                 if i not in availableObjects:
                     QValue_object[i] = -sys.maxint - 1
@@ -318,5 +315,12 @@ class DQN:
         self.saver.restore(self.session, os.getcwd()+'/Savednetworks/'+list_dir[-2])
         return True
 
-
+    def load_replay_memory(self,config):
+        if os.path.exists(config.model_dir+'/replay_file.save'):
+            fp = open(config.model_dir+'/replay_file.save','rb')
+            memory = pickle.load(fp)
+            fp.close()
+        else:
+            memory = ReplayMemory(config)
+        return memory
 
