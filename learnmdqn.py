@@ -161,60 +161,63 @@ def playgame(config):
                 env[i].START_NEW_GAME = True
     #####################################################################
             #for evaluating qvalues
-            if (brain.timeStep[i] % config.EVAL == 0) and (brain.timeStep[i] != 0):
-                if (brain.timeStep[i] / config.EVAL == 1):
-                    if not ((os.path.exists("checkStates"+str(i)+".txt")) and (os.path.getsize("checkStates"+str(i)+".txt") > 0)):                    
-                        assert config.SAMPLE_STATES % config.BATCH_SIZE == 0 
-                        assert config.SAMPLE_STATES < brain.memory[i].count
-                        checkStates, _1, _2, _3, _4, _5 = brain.memory[i].sample()
-                        with open("checkStates"+str(i)+".txt", "w") as fp:
-                            cpickle.dump(checkStates,fp)
-                    else:
-                        with open("checkStates"+str(i)+".txt", 'r') as fp:
-                            checkStates = cpickle.load(fp)
+            if i==2:
+                if ((brain.timeStep/3) % config.EVAL == 0) and (brain.timeStep/3 != 0):
+                    for i in range(3):
+                        if (brain.timeStep / (3*config.EVAL) == 1):
+                            if not ((os.path.exists("checkStates"+str(i)+".txt")) and (os.path.getsize("checkStates"+str(i)+".txt") > 0)):                    
+                                assert config.SAMPLE_STATES % config.BATCH_SIZE == 0 
+                                assert config.SAMPLE_STATES < brain.memory[i].count
+                                checkStates, _1, _2, _3, _4, _5 = brain.memory[i].sample()
+                                with open("checkStates"+str(i)+".txt", "w") as fp:
+                                    cpickle.dump(checkStates,fp)
+                            else:
+                                with open("checkStates"+str(i)+".txt", 'r') as fp:
+                                    checkStates = cpickle.load(fp)
 
-                evalQValues_a = brain.action_valueT.eval(feed_dict={brain.stateInputT:checkStates,brain.controller_id : [i]},session = brain.session)
+                        evalQValues_a = brain.action_valueT.eval(feed_dict={brain.stateInputT:checkStates,brain.controller_id : [i]},session = brain.session)
 
-                maxEvalQValues_a = np.max(evalQValues_a, axis = 1)
-                avgEvalQValues_a = np.mean(maxEvalQValues_a)
+                        maxEvalQValues_a = np.max(evalQValues_a, axis = 1)
+                        avgEvalQValues_a = np.mean(maxEvalQValues_a)
 
-                with open("evalQValue_a"+str(i)+".txt", "a") as fp:
-                    print >>fp,avgEvalQValues_a
+                        with open("evalQValue_a"+str(i)+".txt", "a") as fp:
+                            print >>fp,avgEvalQValues_a
 
-                evalQValues_o = brain.object_valueT.eval(feed_dict={brain.stateInputT:checkStates,brain.controller_id : [i]},session = brain.session)
-                maxEvalQValues_o = np.max(evalQValues_o, axis = 1)
-                avgEvalQValues_o = np.mean(maxEvalQValues_o)
+                        evalQValues_o = brain.object_valueT.eval(feed_dict={brain.stateInputT:checkStates,brain.controller_id : [i]},session = brain.session)
+                        maxEvalQValues_o = np.max(evalQValues_o, axis = 1)
+                        avgEvalQValues_o = np.mean(maxEvalQValues_o)
 
-                with open("evalQValue_o"+str(i)+".txt", "a") as fp:
-                    print >>fp,avgEvalQValues_o
-    #####################################################################
+                        with open("evalQValue_o"+str(i)+".txt", "a") as fp:
+                            print >>fp,avgEvalQValues_o
+            #####################################################################
 
-                env_eval = env[i]
-                total_reward_, nrewards, nepisodes, quest1_reward_cnt = evaluate(brain, env_eval, config,i)
-                
-                with open("test_reward"+str(i)+".txt", "a") as fp:
-                    print >> fp, total_reward_
+                        env_eval = env[i]
+                        print i
+                        total_reward_, nrewards, nepisodes, quest1_reward_cnt = evaluate(brain, env_eval, config,i)
+                        
+                        with open("test_reward"+str(i)+".txt", "a") as fp:
+                            print >> fp, total_reward_
 
-                if i==1:
-                    #setting the best network        
-                    if len(env_eval.reward_history)==0 or total_reward_ > max(env_eval.reward_history):
-                        # save best network
-                        if not os.path.exists(os.getcwd()+'/MDQNSavednetworks'):
-                            os.makedirs(os.getcwd()+'/MDQNSavednetworks')
-                        brain.saver.save(brain.session, os.getcwd()+'/MDQNSavednetworks/'+'network' + '-dqn', global_step = brain.timeStep[2])                
+                        if i==1:
+                            #setting the best network        
+                            if len(env_eval.reward_history)==0 or total_reward_ > max(env_eval.reward_history):
+                                # save best network
+                                if not os.path.exists(os.getcwd()+'/MDQNSavednetworks'):
+                                    os.makedirs(os.getcwd()+'/MDQNSavednetworks')
+                                brain.saver.save(brain.session, os.getcwd()+'/MDQNSavednetworks/'+'network' + '-dqn', global_step = brain.timeStep)                
 
-                env_eval.reward_history.append(total_reward_) #doing this for keeping track of best network    
-                
-    #####################################################################
-                values = [avgEvalQValues_a,avgEvalQValues_o,total_reward_,nrewards,nepisodes,quest1_reward_cnt]
-                keys_ = ['average.q_a','average.q_o','average_reward','average_numrewards','number_of_episodes','quest1_average_reward_cnt']
-                keys = [key + str(i) for key in keys_]
-                brain.inject_summary(dict(zip(keys,values)), brain.timeStep[2])
-    #####################################################################
+                        env_eval.reward_history.append(total_reward_) #doing this for keeping track of best network    
+                        
+            #####################################################################
+                        values = [avgEvalQValues_a,avgEvalQValues_o,total_reward_,nrewards,nepisodes,quest1_reward_cnt]
+                        keys_ = ['average.q_a','average.q_o','average_reward','average_numrewards','number_of_episodes','quest1_average_reward_cnt']
+                        keys = [key + str(i) for key in keys_]
+                        brain.inject_summary(dict(zip(keys,values)), brain.timeStep/3)
+            #####################################################################
         pbar.update(1)
             
             
-        if (brain.timeStep[2]) > config.MAX_FRAMES:
+        if (brain.timeStep/3) > config.MAX_FRAMES:
             brain.train_writer.close()
             break
 

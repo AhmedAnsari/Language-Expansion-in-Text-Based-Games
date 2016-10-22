@@ -25,12 +25,11 @@ class MDQN:
         self.memory = [self.load_replay_memory(config),self.load_replay_memory(config),self.load_replay_memory(config)]
         self.history = [History(),History(),History()]
         #init parameters
-        self.timeStep = [0,0,0]
+        self.timeStep = 0
         self.epsilon = config.INITIAL_EPSILON
 
         self.stateInput = tf.placeholder(tf.int32, [None, self.config.seq_length])
         self.stateInputT = tf.placeholder(tf.int32, [None, self.config.seq_length])
-
 
         # embed = tf.get_variable("embed", [self.config.vocab_size, self.config.embed_dim]) #this is wrong way to initialize
         embed = tf.Variable(tf.random_uniform([self.config.final_vocab_size, self.config.embed_dim], -1, 1),name="embed")
@@ -236,7 +235,7 @@ class MDQN:
                 target_action_batch.append(reward_batch[i] + self.config.GAMMA* np.max(QValue_action_batch[i]))
                 target_object_batch.append(reward_batch[i] + self.config.GAMMA* np.max(QValue_object_batch[i]))
 
-        if self.timeStep[game_id]%self.config.EVAL == self.config.trainfreq:
+        if (self.timeStep/3)%self.config.EVAL == self.config.trainfreq:
             _ , summary = self.session.run([self.optim, self.merged],feed_dict={
                     self.target_action_value : target_action_batch,
                     self.target_object_value : target_object_batch,
@@ -245,7 +244,7 @@ class MDQN:
                     self.stateInput : state_batch,
                     self.controller_id : [game_id]
                     })
-            self.train_writer.add_summary(summary, self.timeStep[game_id])
+            self.train_writer.add_summary(summary, (self.timeStep/3))
 
         else:
             _ = self.session.run([self.optim],feed_dict={
@@ -263,15 +262,14 @@ class MDQN:
         self.history[game_id].add(nextstate)
         if not evaluate:
             self.memory[game_id].add(state, action_indicator, object_indicator, reward, nextstate, terminal)
-        if self.timeStep[game_id] > self.config.REPLAY_START_SIZE and self.memory[game_id].count > self.config.REPLAY_START_SIZE:
+        if (self.timeStep/3) > self.config.REPLAY_START_SIZE and self.memory[game_id].count > self.config.REPLAY_START_SIZE:
             # Train the network
-            if (not evaluate ) and (self.timeStep[game_id] % self.config.trainfreq == 0):
-            	# print "Started Training."
+            if (not evaluate ) and ((self.timeStep/3) % self.config.trainfreq == 0):
                 self.train(game_id)
 
         if not evaluate:
-            self.timeStep[game_id] += 1
-        if self.timeStep[2] % self.config.UPDATE_FREQUENCY == 0:
+            self.timeStep += 1
+        if self.timeStep % (3*self.config.UPDATE_FREQUENCY) == 0:
             self.copyTargetQNetworkOperation()
 
 
@@ -300,7 +298,7 @@ class MDQN:
 
 
         if not evaluate:
-            self.epsilon = self.config.FINAL_EPSILON + max(0, (self.config.INITIAL_EPSILON - self.config.FINAL_EPSILON) * (self.config.EXPLORE - max(0, self.timeStep[game_id] - self.config.REPLAY_START_SIZE))/self.config.EXPLORE)
+            self.epsilon = self.config.FINAL_EPSILON + max(0, (self.config.INITIAL_EPSILON - self.config.FINAL_EPSILON) * (self.config.EXPLORE - max(0, self.timeStep/3 - self.config.REPLAY_START_SIZE))/self.config.EXPLORE)
 
 
         return action_index, object_index
