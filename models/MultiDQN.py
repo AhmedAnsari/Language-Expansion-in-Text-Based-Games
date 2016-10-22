@@ -255,6 +255,8 @@ class MDQN:
                     self.stateInput : state_batch,
                     self.controller_id : [game_id]
                     })
+        if self.timeStep % (3*self.config.UPDATE_FREQUENCY) == 0:
+            self.copyTargetQNetworkOperation()
 
 
 
@@ -269,8 +271,7 @@ class MDQN:
 
         if not evaluate:
             self.timeStep += 1
-        if self.timeStep % (3*self.config.UPDATE_FREQUENCY) == 0:
-            self.copyTargetQNetworkOperation()
+
 
 
     def getAction(self, availableObjects, game_id, evaluate = False):
