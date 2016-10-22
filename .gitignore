@@ -54,3 +54,4 @@ backups/logs
 *.png
 StudentSavednetworks
 .framework.lua.swp
+MDQNSavednetworks

@@ -33,7 +33,7 @@ class MDQN:
 
 
         # embed = tf.get_variable("embed", [self.config.vocab_size, self.config.embed_dim]) #this is wrong way to initialize
-        embed = tf.Variable(tf.random_uniform([self.config.vocab_size, self.config.embed_dim], -1, 1),name="embed")
+        embed = tf.Variable(tf.random_uniform([self.config.final_vocab_size, self.config.embed_dim], -1, 1),name="embed")
         # embedT = tf.get_variable("embedT", [self.config.vocab_size, self.config.embed_dim])
         # print '$'*100
         word_embeds = tf.nn.embedding_lookup(embed, self.stateInput) # @codewalk: What is this line doing ?
@@ -158,11 +158,15 @@ class MDQN:
         self.summary_placeholders = {}
         self.summary_ops = {}
 
-        scalar_summary_tags = ['average.q_a','average.q_o','average.q','average_reward','average_numrewards','number_of_episodes','quest1_average_reward_cnt']
+        tags = ['average.q_a','average.q_o','average.q','average_reward','average_numrewards','number_of_episodes','quest1_average_reward_cnt']
+        scalar_summary_tags = []
+        for i in range(3):
+            scalar_summary_tags.append([tag + str(i) for tag in tags])
 
-        for tag in scalar_summary_tags:
-            self.summary_placeholders[tag] = tf.placeholder('float32', None, name=tag.replace(' ', '_'))
-            self.summary_ops[tag]  = tf.scalar_summary('evaluation_data/'+tag, self.summary_placeholders[tag])
+        for i in range(3):            
+            for tag in scalar_summary_tags[i]:
+                self.summary_placeholders[tag] = tf.placeholder('float32', None, name=tag.replace(' ', '_'))
+                self.summary_ops[tag]  = tf.scalar_summary('evaluation_data/'+tag, self.summary_placeholders[tag])
 
 
 
@@ -189,11 +193,11 @@ class MDQN:
             list_summary.append(tf.scalar_summary('training_data/max/' + name, tf.reduce_max(var)))
             list_summary.append(tf.scalar_summary('training_data/min/' + name, tf.reduce_min(var)))
 
-    def inject_summary(self, tag_dict, step,game_id):
+    def inject_summary(self, tag_dict, step):
         summary_str_lists = self.session.run([self.summary_ops[tag] for tag in tag_dict.keys()], { \
         self.summary_placeholders[tag]: value for tag, value in tag_dict.items()})
         for summary_str in summary_str_lists:
-            self.train_writer.add_summary(summary_str, self.timeStep[game_id])
+            self.train_writer.add_summary(summary_str, step)
 
     def copyTargetQNetworkOperation(self):
         for i in range(len(self.W)):
@@ -220,8 +224,8 @@ class MDQN:
         # Step 2: calculate y
         target_action_batch = []
         target_object_batch = []
-        QValue_action_batch = self.action_valueT.eval(feed_dict={self.stateInputT:nextState_batch,self.controller_id : game_id},session = self.session)
-        QValue_object_batch = self.object_valueT.eval(feed_dict={self.stateInputT:nextState_batch,self.controller_id : game_id},session = self.session)
+        QValue_action_batch = self.action_valueT.eval(feed_dict={self.stateInputT:nextState_batch,self.controller_id : [game_id]},session = self.session)
+        QValue_object_batch = self.object_valueT.eval(feed_dict={self.stateInputT:nextState_batch,self.controller_id : [game_id]},session = self.session)
 
 
         for i in range(0,self.config.BATCH_SIZE):
@@ -239,7 +243,7 @@ class MDQN:
                     self.action_indicator : action_batch,
                     self.object_indicator : obj_batch,
                     self.stateInput : state_batch,
-                    self.controller_id : game_id
+                    self.controller_id : [game_id]
                     })
             self.train_writer.add_summary(summary, self.timeStep[game_id])
 
@@ -250,7 +254,7 @@ class MDQN:
                     self.action_indicator : action_batch,
                     self.object_indicator : obj_batch,
                     self.stateInput : state_batch,
-                    self.controller_id : game_id
+                    self.controller_id : [game_id]
                     })
 
 
@@ -284,9 +288,9 @@ class MDQN:
         else:
             state_batch = np.zeros([self.config.batch_size, self.config.seq_length])
             state_batch[0] = self.history[game_id].get()
-            QValue_action = self.action_value.eval(feed_dict={self.stateInput:state_batch,self.controller_id : game_id},session = self.session)[0]
+            QValue_action = self.action_value.eval(feed_dict={self.stateInput:state_batch,self.controller_id : [game_id]},session = self.session)[0]
             bestAction = np.where(QValue_action == np.max(QValue_action))[0]
-            QValue_object = self.object_value.eval(feed_dict={self.stateInput:state_batch,self.controller_id : game_id},session = self.session)[0]
+            QValue_object = self.object_value.eval(feed_dict={self.stateInput:state_batch,self.controller_id : [game_id]},session = self.session)[0]
             for i in range(QValue_object.size):
                 if i not in availableObjects:
                     QValue_object[i] = -sys.maxint - 1
@@ -304,15 +308,15 @@ class MDQN:
 
     def load_weights(self):
         print 'inload weights'
-        if not os.path.exists(os.getcwd()+'/Savednetworks'):
+        if not os.path.exists(os.getcwd()+'/MDQNSavednetworks'):
             return False
 
-        list_dir = sorted(os.listdir(os.getcwd()+'/Savednetworks'))
+        list_dir = sorted(os.listdir(os.getcwd()+'/MDQNSavednetworks'))
         if not any(item.startswith('network-dqn') for item in list_dir):
             return False
 
         print 'weights loaded'
-        self.saver.restore(self.session, os.getcwd()+'/Savednetworks/'+list_dir[-2])
+        self.saver.restore(self.session, os.getcwd()+'/MDQNSavednetworks/'+list_dir[-2])
         return True
 
     def load_replay_memory(self,config):
