@@ -39,7 +39,7 @@ def savegame(config):
             dic[int(splitdata[1])] = splitdata[0]
     dic[0] = "NULL"
 
-    fp = open("teacher"+str(atgv[1])+"_embeddings.txt","w")
+    fp = open("teacher"+str(sys.argv[1])+"_embeddings.txt","w")
     for i in range(config.vocab_size-1):
         state = np.zeros([config.batch_size,config.seq_length])
         state[:,0]=i
@@ -53,7 +53,7 @@ def savegame(config):
 def main():
     config = Config()
  #   config.test()
-    config.game_num = sys.sys.argv[1]
+    config.game_num = sys.argv[1]
     savegame(config)
 
 if __name__ == '__main__':
