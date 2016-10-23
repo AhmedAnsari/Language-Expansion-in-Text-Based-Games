@@ -32,7 +32,7 @@ def savegame(config):
     # checkStates = None
     #adding progress bar for training
     dic = {}
-    with open("symbolMapping"+str(argv[1])+".txt", 'r') as fp:
+    with open("symbolMapping"+str(sys.argv[1])+".txt", 'r') as fp:
         data = fp.read().split('\n')
         for i in range(len(data) - 1):
             splitdata = data[i].split(' ')
@@ -53,7 +53,7 @@ def savegame(config):
 def main():
     config = Config()
  #   config.test()
-    config.game_num = sys.argv[1]
+    config.game_num = sys.sys.argv[1]
     savegame(config)
 
 if __name__ == '__main__':
