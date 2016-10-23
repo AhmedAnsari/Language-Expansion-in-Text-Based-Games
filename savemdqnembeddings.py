@@ -54,7 +54,7 @@ def savegame(config):
 
     fp = open("MDQN_combined_embeddings.txt","w")
     for word in dic_global.keys():
-        state = np.zeros([256,config.seq_length])
+        state = np.zeros([64,config.seq_length])
         state[:,0]=int(dic_global[word])
         embedding = brain.output_embed.eval(feed_dict={brain.stateInput : state},session=brain.session)[0,0,:]
         print >> fp, word
@@ -65,7 +65,7 @@ def savegame(config):
 
     fp = open("MDQN_game1_embeddings.txt","w")
     for index in dic1.keys():
-        state = np.zeros([256,config.seq_length])
+        state = np.zeros([64,config.seq_length])
         state[:,0]=int(dic_global[dic1[index]])
         embedding = brain.output_embed.eval(feed_dict={brain.stateInput : state},session=brain.session)[0,0,:]
         print >> fp, dic1[index]
@@ -76,7 +76,7 @@ def savegame(config):
 
     fp = open("MDQN_game2_embeddings.txt","w")
     for index in dic2.keys():
-        state = np.zeros([256,config.seq_length])
+        state = np.zeros([64,config.seq_length])
         state[:,0]=int(dic_global[dic2[index]])
         embedding = brain.output_embed.eval(feed_dict={brain.stateInput : state},session=brain.session)[0,0,:]
         print >> fp, dic2[index]
@@ -87,7 +87,7 @@ def savegame(config):
 
     fp = open("MDQN_game3_embeddings.txt","w")
     for index in dic3.keys():
-        state = np.zeros([256,config.seq_length])
+        state = np.zeros([64,config.seq_length])
         state[:,0]=int(dic_global[dic3[index]])
         embedding = brain.output_embed.eval(feed_dict={brain.stateInput : state},session=brain.session)[0,0,:]
         print >> fp, dic3[index]
