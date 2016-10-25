@@ -97,22 +97,22 @@ class student:
 
         self.summary_placeholders = {}
         self.summary_ops = {}
-        if self.config.TUTORIAL_WORLD:
-            scalar_summary_tags = ['average_reward','average_numrewards','number_of_episodes','quest1_average_reward_cnt', \
-                    'quest2_average_reward_cnt','quest3_average_reward_cnt']
-        else:
-            scalar_summary_tags = ['average_reward','average_numrewards','number_of_episodes','quest1_average_reward_cnt']
 
-        for tag in scalar_summary_tags:
-            self.summary_placeholders[tag] = tf.placeholder('float32', None, name=tag.replace(' ', '_'))
-            self.summary_ops[tag]  = tf.scalar_summary('evaluation_data/'+tag, self.summary_placeholders[tag])
+        tags = ['average_reward','average_numrewards','number_of_episodes','quest1_average_reward_cnt']
+        scalar_summary_tags = []
+        for i in range(3):
+            scalar_summary_tags.append([tag + str(i) for tag in tags])
+
+        for i in range(3):            
+            for tag in scalar_summary_tags[i]:
+                self.summary_placeholders[tag] = tf.placeholder('float32', None, name=tag.replace(' ', '_'))
+                self.summary_ops[tag]  = tf.scalar_summary('evaluation_data/'+tag, self.summary_placeholders[tag])
 
 
         self.saver = tf.train.Saver()
         self.train_writer = tf.train.SummaryWriter(self.config.summaries_dir + '/train/'+str(self.config.game_num),self.session.graph)
         if not(self.config.LOAD_WEIGHTS and self.load_weights()):            
             self.session.run(tf.initialize_all_variables())
-
 
     def inject_summary(self, tag_dict, step):
         summary_str_lists = self.session.run([self.summary_ops[tag] for tag in tag_dict.keys()], { \
@@ -159,9 +159,6 @@ class student:
         return True
 
     def sample(self,memory):
-        # print "$"*100
-        # print len(memory)
-        # print "$"*100
         batch = random.sample(memory,self.BATCH_SIZE)
         s_t = [mem[0] for mem in batch]
         action_values = [mem[1] for mem in batch]
