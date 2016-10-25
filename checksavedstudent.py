@@ -62,7 +62,7 @@ def savegame(config):
         action_indicator = np.zeros(actions)
         object_indicator = np.zeros(objects)
         #predict
-        action_index,object_index = brain.getAction(availableObjects, True)
+        action_index,object_index = brain.getAction(availableObjects, sys.argv[1])
         
         action_indicator[action_index] = 1
         object_indicator[object_index] = 1
