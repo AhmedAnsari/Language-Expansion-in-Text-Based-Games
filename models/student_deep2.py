@@ -19,7 +19,7 @@ class student:
         self.timeStep = 0
         self.stateInput = tf.placeholder(tf.int32, [None, self.config.seq_length])
         self.data = {}
-        self.history = History()
+        self.history = [History(),History(),History()]
         self.BATCH_SIZE = 256
 
         #set config.final_vocab_size manually
@@ -100,7 +100,7 @@ class student:
 
         tags = ['average_reward','average_numrewards','number_of_episodes','quest1_average_reward_cnt']
         scalar_summary_tags = []
-        for i in range(3):
+        for i in range(1,4):
             scalar_summary_tags.append([tag + str(i) for tag in tags])
 
         for i in range(3):            
@@ -175,7 +175,7 @@ class student:
             object_index = random.randrange(self.config.num_objects)
         else:
             state_batch = np.zeros([self.BATCH_SIZE, self.config.seq_length])
-            state_batch[0] = self.history.get()
+            state_batch[0] = self.history[game_id-1].get()
             if game_id==1:
                 action_value = self.action_value_1
                 object_value = self.object_value_1

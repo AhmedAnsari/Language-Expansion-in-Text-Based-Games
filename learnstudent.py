@@ -46,7 +46,7 @@ def evaluate(brain,env,config):
         action_indicator = np.zeros(env.action_size())
         object_indicator = np.zeros(env.object_size())
         #predict
-        action_index,object_index = brain.getAction(available_objects, sys.argv[1])
+        action_index,object_index = brain.getAction(available_objects, int(sys.argv[1]))
         action_indicator[action_index] = 1
         object_indicator[object_index] = 1
 

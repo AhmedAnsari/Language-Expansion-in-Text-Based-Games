@@ -32,8 +32,6 @@ fp.close()
 
 def convert_state(state,dic1,dic2):
     out = map(lambda x: int(dic2[dic1[str(x)]]),state)
-    # for i in range(len(state)):
-    #     state[i] = int(dic2[dic1[str(state[i])]])
     return out
 
 def evaluate(brain,env,config,game_id):

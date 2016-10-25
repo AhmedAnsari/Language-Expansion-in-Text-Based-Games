@@ -1,4 +1,4 @@
-from models.student import student
+from models.student_deep2 import student
 from utils import load_data
 import numpy as np
 from models.config import Config
@@ -6,7 +6,7 @@ from tqdm import tqdm
 import sys
 from environment import Environment
 import os
-
+import cPickle  as cpickle
 #global Dictionaries for state space conversion
 dic = [0,0,0]
 for _ in range(3):
@@ -24,14 +24,14 @@ dic_global = dict(spd[0:-1])
 dic_global['NULL']='0'
 fp.close()
 
-def convert_state(state):
-    out = map(lambda x: int(dic_global[dic_local[str(x)]]),state)
+def convert_state(state,dic1,dic2):
+    out = map(lambda x: int(dic2[dic1[str(x)]]),state)
     return out
 
 def evaluate(brain,env,config,game_id):
     state, reward, terminal, available_objects = env.newGame()
-    state = convert_state(state,dic[game_id],dic_global)
-    brain.history[game_id].add(state)
+    state = convert_state(state,dic[game_id-1],dic_global)
+    brain.history[game_id-1].add(state)
 
     total_reward = 0
     nrewards = 0
@@ -43,13 +43,13 @@ def evaluate(brain,env,config,game_id):
     quest2_reward_cnt = 0
     quest1_reward_cnt = 0    
     pbar =  tqdm(total = config.NUM_EVAL_STEPS, desc = 'TESTING')
-    for estep in range(config.NUM_EVAL_STEPS):
+    for estep in range(config.NUM_EVAL_STEPS/10):
         #@TODO:add progress bar here
 
         action_indicator = np.zeros(env.action_size())
         object_indicator = np.zeros(env.object_size())
         #predict
-        action_index,object_index = brain.getAction(available_objects,game_id, True)
+        action_index,object_index = brain.getAction(available_objects,game_id)
         action_indicator[action_index] = 1
         object_indicator[object_index] = 1
 
@@ -59,8 +59,8 @@ def evaluate(brain,env,config,game_id):
         episode_length += 1
 
         #observe
-        nextstate = convert_state(nextstate,dic[game_id],dic_global)
-        brain.setPerception(state, reward, action_indicator, object_indicator, nextstate, terminal, game_id, True)
+        nextstate = convert_state(nextstate,dic[game_id-1],dic_global)
+        brain.history[game_id-1].add(state)
         state = nextstate
 
 
@@ -88,8 +88,8 @@ def evaluate(brain,env,config,game_id):
             episode_length = 0
             nepisodes = nepisodes + 1
             state, reward, terminal, available_objects = env.newGame()
-            state = convert_state(state,dic[game_id],dic_global)
-            brain.history[game_id].add(state)
+            state = convert_state(state,dic[game_id-1],dic_global)
+            brain.history[game_id-1].add(state)
 
         pbar.update(1)
 
@@ -133,17 +133,18 @@ def learnstudent(config):
         brain.timeStep += 1
 #####################################################################
         #for evaluating qvalues
-        if (brain.timeStep % 100)==0 and (brain.timeStep != 0):
+        if (brain.timeStep % 5)==0 and (brain.timeStep != 0):
             # save last network
             if not os.path.exists(os.getcwd()+'/StudentSavednetworks'):
                 os.makedirs(os.getcwd()+'/StudentSavednetworks')
             brain.saver.save(brain.session, os.getcwd()+'/StudentSavednetworks/'+'network' + '-student', global_step = brain.timeStep)
-            for i in range(3):
-                env_eval = env[i]
+
+            for i in range(1,4):
+                env_eval = env[i-1]
                 if config.TUTORIAL_WORLD:
-                    total_reward, nrewards, nepisodes, quest1_reward_cnt, quest2_reward_cnt, quest3_reward_cnt = evaluate(brain, env_eval, config)
+                    total_reward, nrewards, nepisodes, quest1_reward_cnt, quest2_reward_cnt, quest3_reward_cnt = evaluate(brain, env_eval, config, i)
                 else:
-                    total_reward, nrewards, nepisodes, quest1_reward_cnt = evaluate(brain, env_eval, config)
+                    total_reward, nrewards, nepisodes, quest1_reward_cnt = evaluate(brain, env_eval, config, i)
 
     #####################################################################
                 values = [total_reward,nrewards,nepisodes,quest1_reward_cnt]

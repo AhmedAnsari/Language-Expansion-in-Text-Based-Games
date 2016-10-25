@@ -10,3 +10,5 @@ rm -rf StudentSavednetworks
 rm -rf MDQNSavednetworks
 rm -rf logs
 rm *pyc
+rm checkStates*
+rm evalQval*
