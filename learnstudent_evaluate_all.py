@@ -43,7 +43,7 @@ def evaluate(brain,env,config,game_id):
     quest2_reward_cnt = 0
     quest1_reward_cnt = 0    
     pbar =  tqdm(total = config.NUM_EVAL_STEPS, desc = 'TESTING')
-    for estep in range(config.NUM_EVAL_STEPS/10):
+    for estep in range(config.NUM_EVAL_STEPS):
         #@TODO:add progress bar here
 
         action_indicator = np.zeros(env.action_size())
@@ -133,7 +133,7 @@ def learnstudent(config):
         brain.timeStep += 1
 #####################################################################
         #for evaluating qvalues
-        if (brain.timeStep % 5)==0 and (brain.timeStep != 0):
+        if (brain.timeStep % 100)==0 and (brain.timeStep != 0):
             # save last network
             if not os.path.exists(os.getcwd()+'/StudentSavednetworks'):
                 os.makedirs(os.getcwd()+'/StudentSavednetworks')
