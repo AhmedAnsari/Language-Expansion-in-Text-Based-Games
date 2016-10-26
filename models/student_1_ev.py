@@ -193,9 +193,9 @@ class student:
             QValue_action = action_value.eval(feed_dict={self.stateInput:state_batch},session = self.session)[0]
             bestAction = np.where(QValue_action == np.max(QValue_action))[0]
             QValue_object = object_value.eval(feed_dict={self.stateInput:state_batch},session = self.session)[0]
-            for i in range(QValue_object.size):
-                if i not in availableObjects:
-                    QValue_object[i] = -sys.maxint - 1
+            # for i in range(QValue_object.size):
+            #     if i not in availableObjects:
+            #         QValue_object[i] = -sys.maxint - 1
             bestObject = np.where(QValue_object == np.max(QValue_object))[0]
             action_index = bestAction[random.randrange(0,bestAction.shape[0])]
             object_index = bestObject[random.randrange(0,bestObject.shape[0])]
