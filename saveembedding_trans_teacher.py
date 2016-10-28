@@ -69,7 +69,7 @@ def savegame(config):
         dic_embedding[dic_trans[dic[i]]] = embedding
     brain.session.close()
 
-    cpickle.dump( dic_embedding, open( "embedTeacher"+str(sys.argv)+".p", "wb" ))
+    cpickle.dump( dic_embedding, open( "embedTeacher"+str(sys.argv[1])+".p", "wb" ))
 
 def main():
     config = Config()
