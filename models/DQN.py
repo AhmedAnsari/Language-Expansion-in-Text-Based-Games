@@ -36,8 +36,8 @@ class DQN:
         embed = tf.Variable(tf.random_uniform([self.config.vocab_size, self.config.embed_dim], -1, 1),name="embed")
         # embedT = tf.get_variable("embedT", [self.config.vocab_size, self.config.embed_dim])
         # print '$'*100
-        word_embeds = tf.nn.embedding_lookup(embed, self.stateInput) # @codewalk: What is this line doing ?
-        word_embedsT = tf.nn.embedding_lookup(embed, self.stateInputT) # @codewalk: What is this line doing ?
+        self.word_embeds = tf.nn.embedding_lookup(embed, self.stateInput) # @codewalk: What is this line doing ?
+        self.word_embedsT = tf.nn.embedding_lookup(embed, self.stateInputT) # @codewalk: What is this line doing ?
         # print '$'*100
         self.initializer = tf.truncated_normal_initializer(stddev = 0.02)
         # self.initializer = tf.random_uniform_initializer(minval=-1.0, maxval=1.0, seed=None, dtype=tf.float32)
@@ -51,8 +51,8 @@ class DQN:
         # print '$'*100
         # early_stop = tf.constant(self.config.seq_length, dtype = tf.int32)
         # print '$'*100
-        outputs, _ = tf.nn.rnn(self.cell, [tf.reshape(embed_t, [-1, self.config.embed_dim]) for embed_t in tf.split(1, self.config.seq_length, word_embeds)], dtype=tf.float32, initial_state = initial_state, scope = "LSTMN")
-        outputsT, _ = tf.nn.rnn(self.cellT, [tf.reshape(embed_tT, [-1, self.config.embed_dim]) for embed_tT in tf.split(1, self.config.seq_length, word_embedsT)], dtype=tf.float32, initial_state = initial_stateT, scope = "LSTMT")
+        outputs, _ = tf.nn.rnn(self.cell, [tf.reshape(embed_t, [-1, self.config.embed_dim]) for embed_t in tf.split(1, self.config.seq_length, self.word_embeds)], dtype=tf.float32, initial_state = initial_state, scope = "LSTMN")
+        outputsT, _ = tf.nn.rnn(self.cellT, [tf.reshape(embed_tT, [-1, self.config.embed_dim]) for embed_tT in tf.split(1, self.config.seq_length, self.word_embedsT)], dtype=tf.float32, initial_state = initial_stateT, scope = "LSTMT")
         # print '$'*100
         self.output_embed = tf.transpose(tf.pack(outputs), [1, 0, 2])
         self.output_embedT = tf.transpose(tf.pack(outputsT), [1, 0, 2])

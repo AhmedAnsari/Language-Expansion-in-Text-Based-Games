@@ -12,7 +12,10 @@ if arg[1]=='1' then
     login('root', 'root')
     counter = tonumber(arg[1])    
     framework.makeSymbolMapping("../text-world/evennia/contrib/text_sims/build.ev")
-    framework.writeSymbolMapping(6)
+    framework.makeSymbolMapping("../text-world/evennia/contrib/text_sims3/build.ev")
+    framework.makeSymbolMapping("../text-world/evennia/contrib/text_sims4/build.ev")
+    framework.makeSymbolMapping("../text-world/evennia/contrib/text_sims6/build.ev")
+    framework.writeSymbolMapping("1236")
 	print("#symbols", #symbols)
 	framework.interact(counter)    
 elseif arg[1]=='6' then
@@ -23,5 +26,3 @@ elseif arg[1]=='6' then
     framework.writeSymbolMapping("1236")
 	print("#symbols", #symbols)    
 end
-
-

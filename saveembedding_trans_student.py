@@ -4,7 +4,7 @@
 # -------------------------
 
 import os
-from models.DQN import DQN
+from models.student import student
 # from models.bow_DQN import DQN
 # from models.lstdq import DQN
 import numpy as np
@@ -14,31 +14,15 @@ from tqdm import tqdm
 import random
 import sys
 from environment import Environment
-import tensorflow as tf
 
 
 def savegame(config):
-    # Step 1: init Game
-    env = Environment(config.game_num) #1 is for main game 2 is for evaluation
-    ###################
-    # Step 2: init DQN
-    actions = env.action_size()
-    objects = env.object_size()
-    config.setnumactions(actions)
-    config.setnumobjects(objects)
-    config.setvocabsize(env.vocab_size())
-
-    brain = DQN(config)
-
-    # checkStates = None
-    #adding progress bar for training
-    dic = {}
-    with open("symbolMapping"+str(sys.argv[1])+".txt", 'r') as fp:
-        data = fp.read().split('\n')
-        for i in range(len(data) - 1):
-            splitdata = data[i].split(' ')
-            dic[int(splitdata[1])] = splitdata[0]
-    dic[0] = "NULL"
+    fp = open('symbolMapping5.txt','r')
+    data = fp.read().split('\n')
+    spd = [data_.split(' ')for data_ in data]
+    dic_global = dict(spd[0:-1])
+    dic_global['NULL']='0'
+    fp.close()
 
     dic_trans = {}
     with open("symbolMapping1236.txt", 'r') as fp:
@@ -57,24 +41,31 @@ def savegame(config):
     tf.initialize_all_variables().run()
     state = sorted(dic_trans.values())
     state_map = word_embeds.eval(feed_dict={stateInput : state})
-
     for i in range(len(state)):
         dic_embedding[state[i]] = state_map[i]
     sess.close()
 
-    for i in range(config.vocab_size-1):
-        state = np.zeros([config.batch_size,config.seq_length])
-        state[:,0]=i
+    # Step 2: init DQN
+    actions = 5 #manually setting to avid creating env everytime
+    objects = 8 #manually setting to avid creating env everytime
+    config.setnumactions(actions)
+    config.setnumobjects(objects)
+    brain = student(config)
+
+
+    fp = open("student_combined_embeddings.txt","w")
+    for word in dic_global.keys():
+        state = np.zeros([256,config.seq_length])
+        state[:,0]=int(dic_global[word])
         embedding = brain.word_embeds.eval(feed_dict={brain.stateInput : state},session=brain.session)[0,0]
-        dic_embedding[dic_trans[dic[i]]] = embedding
+        dic_embedding[dic_trans[word]] = embedding
+    fp.close()
     brain.session.close()
-
-    cpickle.dump( dic_embedding, open( "embedTeacher"+str(sys.argv)+".p", "wb" ))
-
+    cpickle.dump( dic_embedding, open( "embedStudent.p", "wb" ))
 def main():
     config = Config()
  #   config.test()
-    config.game_num = sys.argv[1]
+    # config.game_num = sys.argv[1]
     savegame(config)
 
 if __name__ == '__main__':
