@@ -4,7 +4,7 @@
 # -------------------------
 
 import os
-from models.DQN import DQN
+from models.DQN_trans import DQN
 # from models.bow_DQN import DQN
 #from models.lstdq import DQN
 import numpy as np

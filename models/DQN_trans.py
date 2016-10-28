@@ -18,7 +18,7 @@ import cPickle as pickle
 class DQN:
     def __init__(self, config):
 
-        self.dic  =  pickle.load(open("embedTeacher"+str(config.game_num),"rb"))
+        self.dic  =  pickle.load(open("embedTeacher"+str(config.game_num)+".p","rb"))
         #init replay memory
         self.session = tf.Session()
         self.config = config
@@ -29,8 +29,14 @@ class DQN:
         self.timeStep = 0
         self.epsilon = config.INITIAL_EPSILON
 
-        self.stateInput = tf.placeholder(tf.int32, [None, self.config.seq_length,self.config.embed_dim])
-        self.stateInputT = tf.placeholder(tf.int32, [None, self.config.seq_length,self.config.embed_dim])
+        # self.stateInput = tf.placeholder(tf.int32, [None, self.config.seq_length,self.config.embed_dim])
+        # self.stateInputT = tf.placeholder(tf.int32, [None, self.config.seq_length,self.config.embed_dim])
+
+        self.stateInput = tf.placeholder(tf.float32, [None, self.config.seq_length,self.config.embed_dim])
+        self.stateInputT = tf.placeholder(tf.float32, [None, self.config.seq_length,self.config.embed_dim])
+
+        # self.stateInput = tf.placeholder(tf.int32, [self.config.seq_length, self.config.BATCH_SIZE, self.config.embed_dim])
+        # self.stateInputT = tf.placeholder(tf.int32, [self.config.seq_length, self.config.BATCH_SIZE, self.config.embed_dim])
 
         self.word_embeds = self.stateInput
         self.word_embedsT = self.stateInputT
@@ -49,6 +55,8 @@ class DQN:
         # print '$'*100
         outputs, _ = tf.nn.rnn(self.cell, [tf.reshape(embed_t, [-1, self.config.embed_dim]) for embed_t in tf.split(1, self.config.seq_length, self.word_embeds)], dtype=tf.float32, initial_state = initial_state, scope = "LSTMN")
         outputsT, _ = tf.nn.rnn(self.cellT, [tf.reshape(embed_tT, [-1, self.config.embed_dim]) for embed_tT in tf.split(1, self.config.seq_length, self.word_embedsT)], dtype=tf.float32, initial_state = initial_stateT, scope = "LSTMT")
+        # outputs, _ = tf.nn.rnn(self.cell, self.word_embeds, dtype=tf.float32, initial_state = initial_state, scope = "LSTMN")
+        # outputsT, _ = tf.nn.rnn(self.cellT, self.word_embedsT, dtype=tf.float32, initial_state = initial_stateT, scope = "LSTMT")
         # print '$'*100
         self.output_embed = tf.transpose(tf.pack(outputs), [1, 0, 2])
         self.output_embedT = tf.transpose(tf.pack(outputsT), [1, 0, 2])
@@ -381,7 +389,7 @@ class DQN:
         for i in range(len(state)):
             for j in range(self.config.seq_length):
                 output[i,j] = self.dic[state[i,j]]
-        return output
+        return output.reshape(1,0,2)
 
 
 
