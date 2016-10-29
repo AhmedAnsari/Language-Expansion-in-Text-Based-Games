@@ -391,8 +391,8 @@ class DQN:
         output = np.zeros([len(state),self.config.seq_length,self.config.embed_dim])
         for i in range(len(state)):
             for j in range(self.config.seq_length):
-                output[i,j] = self.dic[state[i,j]]
-        return output.reshape(1,0,2)
+                output[i,j] = self.dic[state[i][j]]
+        return output
 
 
 
