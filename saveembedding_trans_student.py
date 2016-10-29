@@ -17,6 +17,12 @@ from environment import Environment
 
 
 def savegame(config):
+    # Step 2: init DQN
+    actions = 5 #manually setting to avid creating env everytime
+    objects = 8 #manually setting to avid creating env everytime
+    config.setnumactions(actions)
+    config.setnumobjects(objects)
+    brain = student(config)    
     fp = open('symbolMapping5.txt','r')
     data = fp.read().split('\n')
     spd = [data_.split(' ')for data_ in data]
@@ -45,12 +51,7 @@ def savegame(config):
         dic_embedding[state[i]] = state_map[i]
     sess.close()
 
-    # Step 2: init DQN
-    actions = 5 #manually setting to avid creating env everytime
-    objects = 8 #manually setting to avid creating env everytime
-    config.setnumactions(actions)
-    config.setnumobjects(objects)
-    brain = student(config)
+
 
 
     fp = open("student_combined_embeddings.txt","w")
