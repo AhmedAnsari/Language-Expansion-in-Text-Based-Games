@@ -13,7 +13,9 @@ class student:
     def __init__(self, config):
 
         #init replay memory
-        self.session = tf.Session()
+        conf = tf.ConfigProto()
+        conf.gpu_options.allow_growth=True
+        self.session = tf.Session(config=conf)
         self.config = config
         #init parameters
         self.timeStep = 0

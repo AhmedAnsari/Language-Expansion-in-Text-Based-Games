@@ -20,7 +20,10 @@ class DQN:
 
         self.dic  =  pickle.load(open("embedTeacher"+str(config.game_num)+".p","rb"))
         #init replay memory
-        self.session = tf.Session()
+        conf = tf.ConfigProto()
+        conf.gpu_options.allow_growth=True
+        self.session = tf.Session(config=conf)
+
         self.config = config
 
         self.memory = self.load_replay_memory(config)
