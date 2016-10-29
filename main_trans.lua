@@ -5,7 +5,7 @@ require 'utils'
 
 
 
-if arg[1]=='1' then
+if arg[1]!='6' then
     local port = 4000 + tonumber(arg[1])
     print(port)
     client_connect(port)
