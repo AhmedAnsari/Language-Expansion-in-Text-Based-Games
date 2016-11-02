@@ -60,15 +60,15 @@ def evaluate(brain,env,config,game_id):
         state_batch = np.zeros([brain.BATCH_SIZE, brain.config.seq_length])
         state_batch[0] = self.history[game_id-1].get()
         if game_id==1:
-            a, o = sess.run(H1a,H1o,feed_dict={brain.stateInput=state_batch},sessios=brain.session)
+            a, o = sess.run(H1a,H1o,feed_dict={brain.stateInput:state_batch},sessios=brain.session)
             maps_a.append(a[0])
             maps_o.append(o[0])
         elif game_id==2:
-            a, o = sess.run(H2a,H2o,feed_dict={brain.stateInput=state_batch},sessios=brain.session)
+            a, o = sess.run(H2a,H2o,feed_dict={brain.stateInput:state_batch},sessios=brain.session)
             maps_a.append(a[0])
             maps_o.append(o[0])   
         elif game_id==3:
-            a, o = sess.run(H3a,H3o,feed_dict={brain.stateInput=state_batch},sessios=brain.session)
+            a, o = sess.run(H3a,H3o,feed_dict={brain.stateInput:state_batch},sessios=brain.session)
             maps_a.append(a[0])
             maps_o.append(o[0])               
 
