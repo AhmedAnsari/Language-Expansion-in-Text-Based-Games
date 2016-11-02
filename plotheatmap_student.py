@@ -24,6 +24,9 @@ dic_global = dict(spd[0:-1])
 dic_global['NULL']='0'
 fp.close()
 
+maps_a=dict(zip([0,1,2],[[],[],[]]))
+maps_o=dict(zip([0,1,2],[[],[],[]]))
+
 def convert_state(state,dic1,dic2):
     out = map(lambda x: int(dic2[dic1[str(x)]]),state)
     return out
@@ -53,7 +56,22 @@ def evaluate(brain,env,config,game_id):
         action_indicator[action_index] = 1
         object_indicator[object_index] = 1
 
-        
+        #heatmap ops
+        state_batch = np.zeros([brain.BATCH_SIZE, brain.config.seq_length])
+        state_batch[0] = self.history[game_id-1].get()
+        if game_id==1:
+            a, o = sess.run(H1a,H1o,feed_dict={brain.stateInput=state_batch},sessios=brain.session)
+            maps_a.append(a[0])
+            maps_o.append(o[0])
+        elif game_id==2:
+            a, o = sess.run(H2a,H2o,feed_dict={brain.stateInput=state_batch},sessios=brain.session)
+            maps_a.append(a[0])
+            maps_o.append(o[0])   
+        elif game_id==3:
+            a, o = sess.run(H3a,H3o,feed_dict={brain.stateInput=state_batch},sessios=brain.session)
+            maps_a.append(a[0])
+            maps_o.append(o[0])               
+
         ##-- Play game in test mode (episodes don't end when losing a life)
         nextstate,reward,terminal, available_objects = env.step(action_index,object_index)
         episode_length += 1
@@ -124,42 +142,27 @@ def learnstudent(config):
     brain.data[2] = reader('2_mem.txt')
     brain.data[3] = reader('3_mem.txt')
 
+    H1a = tf.gradients(brain.action_value1,[brain.stateInput])[0]
+    H2a = tf.gradients(brain.action_value2,[brain.stateInput])[0]    
+    H3a = tf.gradients(brain.action_value3,[brain.stateInput])[0]    
+    H1o = tf.gradients(brain.object_value1,[brain.stateInput])[0]
+    H2o = tf.gradients(brain.object_value2,[brain.stateInput])[0]    
+    H3o = tf.gradients(brain.object_value3,[brain.stateInput])[0]        
 
-    #adding progress bar for training
-    pbar = tqdm(total = config.MAX_FRAMES, desc='Training Progress')
-    while True:
-        for _ in range(1,4):
-            brain.train(_)
-        brain.timeStep += 1
-#####################################################################
-        #for evaluating qvalues
-        if (brain.timeStep % 100)==0 and (brain.timeStep != 0):
-            # save last network
-            if not os.path.exists(os.getcwd()+'/StudentSavednetworks'):
-                os.makedirs(os.getcwd()+'/StudentSavednetworks')
-            brain.saver.save(brain.session, os.getcwd()+'/StudentSavednetworks/'+'network' + '-student', global_step = brain.timeStep)
-
-            for i in range(1,4):
-                env_eval = env[i-1]
-                if config.TUTORIAL_WORLD:
-                    total_reward, nrewards, nepisodes, quest1_reward_cnt, quest2_reward_cnt, quest3_reward_cnt = evaluate(brain, env_eval, config, i)
-                else:
-                    total_reward, nrewards, nepisodes, quest1_reward_cnt = evaluate(brain, env_eval, config, i)
-
-    #####################################################################
-                values = [total_reward,nrewards,nepisodes,quest1_reward_cnt]
-                keys_ = ['average_reward','average_numrewards','number_of_episodes','quest1_average_reward_cnt']
-                keys = [key + str(i) for key in keys_]
-                brain.inject_summary(dict(zip(keys,values)), brain.timeStep)
-#####################################################################
-        pbar.update(1)
+    for i in range(1,4):
+        env_eval = env[i-1]
+        if config.TUTORIAL_WORLD:
+            total_reward, nrewards, nepisodes, quest1_reward_cnt, quest2_reward_cnt, quest3_reward_cnt = evaluate(brain, env_eval, config, i)
+        else:
+            total_reward, nrewards, nepisodes, quest1_reward_cnt = evaluate(brain, env_eval, config, i)
 
 
-        if (brain.timeStep) > config.MAX_FRAMES:
-            brain.train_writer.close()
-            break
     brain.session.close()
 
+    with open("mapsa.p","wb") as fp:
+        cpickle.dump(maps_a,fp)
+    with open("mapso.p","wb") as fp:
+        cpickle.dump(maps_o,fp)        
 def main():
     config = Config()
     learnstudent(config)
