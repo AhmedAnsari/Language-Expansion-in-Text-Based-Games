@@ -1,3 +1,4 @@
+import tensorflow as tf
 from models.student_1_ev import student
 from utils import load_data
 import numpy as np
@@ -58,17 +59,17 @@ def evaluate(brain,env,config,game_id):
 
         #heatmap ops
         state_batch = np.zeros([brain.BATCH_SIZE, brain.config.seq_length])
-        state_batch[0] = self.history[game_id-1].get()
+        state_batch[0] = brain.history[game_id-1].get()
         if game_id==1:
-            a, o = sess.run(H1a,H1o,feed_dict={brain.stateInput:state_batch},sessios=brain.session)
+            a, o = brain.session.run(H1a,H1o,feed_dict={brain.stateInput:state_batch})
             maps_a.append(a[0])
             maps_o.append(o[0])
         elif game_id==2:
-            a, o = sess.run(H2a,H2o,feed_dict={brain.stateInput:state_batch},sessios=brain.session)
+            a, o = brain.session.run(H2a,H2o,feed_dict={brain.stateInput:state_batch})
             maps_a.append(a[0])
             maps_o.append(o[0])   
         elif game_id==3:
-            a, o = sess.run(H3a,H3o,feed_dict={brain.stateInput:state_batch},sessios=brain.session)
+            a, o = brain.session.run(H3a,H3o,feed_dict={brain.stateInput:state_batch})
             maps_a.append(a[0])
             maps_o.append(o[0])               
 
@@ -142,12 +143,12 @@ def learnstudent(config):
     brain.data[2] = reader('2_mem.txt')
     brain.data[3] = reader('3_mem.txt')
 
-    H1a = tf.gradients(brain.action_value1,[brain.stateInput])[0]
-    H2a = tf.gradients(brain.action_value2,[brain.stateInput])[0]    
-    H3a = tf.gradients(brain.action_value3,[brain.stateInput])[0]    
-    H1o = tf.gradients(brain.object_value1,[brain.stateInput])[0]
-    H2o = tf.gradients(brain.object_value2,[brain.stateInput])[0]    
-    H3o = tf.gradients(brain.object_value3,[brain.stateInput])[0]        
+    H1a = tf.gradients(brain.action_value_1,[brain.stateInput])[0]
+    H2a = tf.gradients(brain.action_value_2,[brain.stateInput])[0]    
+    H3a = tf.gradients(brain.action_value_3,[brain.stateInput])[0]    
+    H1o = tf.gradients(brain.object_value_1,[brain.stateInput])[0]
+    H2o = tf.gradients(brain.object_value_2,[brain.stateInput])[0]    
+    H3o = tf.gradients(brain.object_value_3,[brain.stateInput])[0]        
 
     for i in range(1,4):
         env_eval = env[i-1]
