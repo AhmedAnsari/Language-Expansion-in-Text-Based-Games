@@ -34,18 +34,18 @@ class student:
         outputs, _ = tf.nn.rnn(self.cell, [tf.reshape(embed_t, [-1, self.config.embed_dim]) for embed_t in tf.split(1, self.config.seq_length, self.word_embeds)], dtype=tf.float32, initial_state = initial_state, scope = "LSTMN")
         self.output_embed = tf.transpose(tf.pack(outputs), [1, 0, 2])
         self.mean_pool = tf.reduce_mean(self.output_embed, 1)
-        linear_output = tf.nn.relu(tf.nn.rnn_cell._linear(self.mean_pool, int(self.output_embed.get_shape()[2]), 1.0, 0.01, scope="linearN"))
+        self.linear_output = tf.nn.relu(tf.nn.rnn_cell._linear(self.mean_pool, int(self.output_embed.get_shape()[2]), 1.0, 0.01, scope="linearN"))
 
 
         #we calculate the Q values. For the Student Network
-        self.action_value_1 = tf.nn.rnn_cell._linear(linear_output, self.config.num_actions, 1.0, 0.01, scope="actionN1")
-        self.object_value_1 = tf.nn.rnn_cell._linear(linear_output, self.config.num_objects, 1.0, 0.01, scope="objectN1")
+        self.action_value_1 = tf.nn.rnn_cell._linear(self.linear_output, self.config.num_actions, 1.0, 0.01, scope="actionN1")
+        self.object_value_1 = tf.nn.rnn_cell._linear(self.linear_output, self.config.num_objects, 1.0, 0.01, scope="objectN1")
 
-        self.action_value_2 = tf.nn.rnn_cell._linear(linear_output, self.config.num_actions, 1.0, 0.01, scope="actionN2")
-        self.object_value_2 = tf.nn.rnn_cell._linear(linear_output, self.config.num_objects, 1.0, 0.01, scope="objectN2")
+        self.action_value_2 = tf.nn.rnn_cell._linear(self.linear_output, self.config.num_actions, 1.0, 0.01, scope="actionN2")
+        self.object_value_2 = tf.nn.rnn_cell._linear(self.linear_output, self.config.num_objects, 1.0, 0.01, scope="objectN2")
 
-        self.action_value_3 = tf.nn.rnn_cell._linear(linear_output, self.config.num_actions, 1.0, 0.01, scope="actionN3")
-        self.object_value_3 = tf.nn.rnn_cell._linear(linear_output, self.config.num_objects, 1.0, 0.01, scope="objectN3")
+        self.action_value_3 = tf.nn.rnn_cell._linear(self.linear_output, self.config.num_actions, 1.0, 0.01, scope="actionN3")
+        self.object_value_3 = tf.nn.rnn_cell._linear(self.linear_output, self.config.num_objects, 1.0, 0.01, scope="objectN3")
 
 
 

@@ -25,14 +25,15 @@ dic_global = dict(spd[0:-1])
 dic_global['NULL']='0'
 fp.close()
 
-maps_a=dict(zip([0,1,2],[[],[],[]]))
-maps_o=dict(zip([0,1,2],[[],[],[]]))
+maps = dict(zip([0,1,2],[[],[],[]]))
+a_map = dict(zip([0,1,2],[[],[],[]]))
+o_map = dict(zip([0,1,2],[[],[],[]]))
 
 def convert_state(state,dic1,dic2):
     out = map(lambda x: int(dic2[dic1[str(x)]]),state)
     return out
 
-def evaluate(brain,env,config,game_id):
+def evaluate(brain,env,config,game_id,H,H1a,H3a, H1o, H3o):
     state, reward, terminal, available_objects = env.newGame()
     state = convert_state(state,dic[game_id-1],dic_global)
     brain.history[game_id-1].add(state)
@@ -47,7 +48,7 @@ def evaluate(brain,env,config,game_id):
     quest2_reward_cnt = 0
     quest1_reward_cnt = 0    
     pbar =  tqdm(total = config.NUM_EVAL_STEPS, desc = 'TESTING')
-    for estep in range(config.NUM_EVAL_STEPS):
+    for estep in range(config.NUM_EVAL_STEPS/10):
         #@TODO:add progress bar here
 
         action_indicator = np.zeros(env.action_size())
@@ -60,18 +61,17 @@ def evaluate(brain,env,config,game_id):
         #heatmap ops
         state_batch = np.zeros([brain.BATCH_SIZE, brain.config.seq_length])
         state_batch[0] = brain.history[game_id-1].get()
+        # print brain.mean_pool.get_shape()
+        # print brain.linear_output.get_shape()
+        maps[game_id-1].append(brain.session.run(H,feed_dict={brain.stateInput:state_batch})[0])
+
         if game_id==1:
-            a, o = brain.session.run(H1a,H1o,feed_dict={brain.stateInput:state_batch})
-            maps_a.append(a[0])
-            maps_o.append(o[0])
-        elif game_id==2:
-            a, o = brain.session.run(H2a,H2o,feed_dict={brain.stateInput:state_batch})
-            maps_a.append(a[0])
-            maps_o.append(o[0])   
+            a_map[game_id-1].append(brain.session.run(H1a,feed_dict={brain.stateInput:state_batch})[0])
+            o_map[game_id-1].append(brain.session.run(H1o,feed_dict={brain.stateInput:state_batch})[0])
+        # elif game_id==2: 
         elif game_id==3:
-            a, o = brain.session.run(H3a,H3o,feed_dict={brain.stateInput:state_batch})
-            maps_a.append(a[0])
-            maps_o.append(o[0])               
+            a_map[game_id-1].append(brain.session.run(H3a,feed_dict={brain.stateInput:state_batch})[0])
+            o_map[game_id-1].append(brain.session.run(H3o,feed_dict={brain.stateInput:state_batch})[0])
 
         ##-- Play game in test mode (episodes don't end when losing a life)
         nextstate,reward,terminal, available_objects = env.step(action_index,object_index)
@@ -143,27 +143,37 @@ def learnstudent(config):
     brain.data[2] = reader('2_mem.txt')
     brain.data[3] = reader('3_mem.txt')
 
-    H1a = tf.gradients(brain.action_value_1,[brain.stateInput])[0]
-    H2a = tf.gradients(brain.action_value_2,[brain.stateInput])[0]    
-    H3a = tf.gradients(brain.action_value_3,[brain.stateInput])[0]    
-    H1o = tf.gradients(brain.object_value_1,[brain.stateInput])[0]
-    H2o = tf.gradients(brain.object_value_2,[brain.stateInput])[0]    
-    H3o = tf.gradients(brain.object_value_3,[brain.stateInput])[0]        
+    
+
+    jacob  = [tf.gradients(var,[brain.mean_pool])[0] for var in tf.split(1, 50, brain.linear_output)]
+    H = tf.pack(jacob,axis = 2 )
+
+    jacob_1a  = [tf.gradients(var,[brain.linear_output])[0] for var in tf.split(1, 5, brain.action_value_1)]
+    H1a = tf.pack(jacob_1a,axis = 2 )
+
+    jacob_1o  = [tf.gradients(var,[brain.linear_output])[0] for var in tf.split(1, 8, brain.object_value_1)]
+    H1o = tf.pack(jacob_1a,axis = 2 )    
+
+    jacob_3a  = [tf.gradients(var,[brain.linear_output])[0] for var in tf.split(1, 5, brain.action_value_3)]
+    H3a = tf.pack(jacob_3a,axis = 2 )    
+
+    jacob_3o  = [tf.gradients(var,[brain.linear_output])[0] for var in tf.split(1, 8, brain.object_value_3)]
+    H3o = tf.pack(jacob_3a,axis = 2 )        
 
     for i in range(1,4):
         env_eval = env[i-1]
-        if config.TUTORIAL_WORLD:
-            total_reward, nrewards, nepisodes, quest1_reward_cnt, quest2_reward_cnt, quest3_reward_cnt = evaluate(brain, env_eval, config, i)
-        else:
-            total_reward, nrewards, nepisodes, quest1_reward_cnt = evaluate(brain, env_eval, config, i)
+        total_reward, nrewards, nepisodes, quest1_reward_cnt = evaluate(brain, env_eval, config, i,H, H1a, H3a, H1o, H3o)
 
 
     brain.session.close()
 
-    with open("mapsa.p","wb") as fp:
-        cpickle.dump(maps_a,fp)
-    with open("mapso.p","wb") as fp:
-        cpickle.dump(maps_o,fp)        
+    with open("maps.p","wb") as fp:
+        cpickle.dump(maps,fp)
+    with open("maps_a.p","wb") as fp:
+        cpickle.dump(a_map,fp)
+    with open("maps_o.p","wb") as fp:
+        cpickle.dump(o_map,fp)        
+        
 def main():
     config = Config()
     learnstudent(config)
