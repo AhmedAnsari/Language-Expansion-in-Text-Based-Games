@@ -139,27 +139,32 @@ def learnstudent(config):
 
 
     brain = student(config)
-    brain.data[1] = reader('1_mem.txt')
-    brain.data[2] = reader('2_mem.txt')
-    brain.data[3] = reader('3_mem.txt')
+    # brain.data[1] = reader('1_mem.txt')
+    # brain.data[2] = reader('2_mem.txt')
+    # brain.data[3] = reader('3_mem.txt')
 
     
-
-    jacob  = [tf.gradients(var,[brain.mean_pool])[0] for var in tf.split(1, 50, brain.linear_output)]
+    print "--"*100
+    print int(brain.linear_output.get_shape()[-1])
+    print "--"*100    
+    
+    jacob  = [tf.gradients(var,[brain.mean_pool])[0] for var in tf.split(1, int(brain.linear_output.get_shape()[-1]), brain.linear_output)]
     H = tf.pack(jacob,axis = 2 )
 
     jacob_1a  = [tf.gradients(var,[brain.linear_output])[0] for var in tf.split(1, 5, brain.action_value_1)]
     H1a = tf.pack(jacob_1a,axis = 2 )
 
     jacob_1o  = [tf.gradients(var,[brain.linear_output])[0] for var in tf.split(1, 8, brain.object_value_1)]
-    H1o = tf.pack(jacob_1a,axis = 2 )    
+    H1o = tf.pack(jacob_1o,axis = 2 )    
 
     jacob_3a  = [tf.gradients(var,[brain.linear_output])[0] for var in tf.split(1, 5, brain.action_value_3)]
     H3a = tf.pack(jacob_3a,axis = 2 )    
 
     jacob_3o  = [tf.gradients(var,[brain.linear_output])[0] for var in tf.split(1, 8, brain.object_value_3)]
-    H3o = tf.pack(jacob_3a,axis = 2 )        
-
+    H3o = tf.pack(jacob_3o,axis = 2 )        
+    # print "check"
+    # print H3o.get_shape()
+    # print "--"*100
     for i in range(1,4):
         env_eval = env[i-1]
         total_reward, nrewards, nepisodes, quest1_reward_cnt = evaluate(brain, env_eval, config, i,H, H1a, H3a, H1o, H3o)
