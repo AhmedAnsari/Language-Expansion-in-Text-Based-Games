@@ -13,7 +13,7 @@ class World:
 		desc = ["This room has a couch, chairs and TV.",
 				"You have entered the living room. You can watch TV here",
 				"This room has two sofas, chairs and a chandelier."]
-		nei = [-1, 2, -1, 4]
+		nei = [-1, 1, -1, 3]
 		obj = "tv"
 		act = "watch"
 		self.rooms.append(Room(0, self.roomNames[0], desc, nei, obj, act))
@@ -21,7 +21,7 @@ class World:
 		desc = ["This space has a swing, flowers and trees.",
 				"You have arrived at the garden. You can exercise here",
 				"This area has plants, grass and rabbits."]
-		nei = [-1, -1, 1, 3]
+		nei = [-1, -1, 0, 2]
 		obj = "bike"
 		act = "exercise"
 		self.rooms.append(Room(1, self.roomNames[1], desc, nei, obj, act))
@@ -29,7 +29,7 @@ class World:
 		desc = ["This room has a fridge, oven, and a sink.",
 				"You have arrived in the kitchen. You can find food and drinks here.",
 				"This living area has pizza, coke, and icecream."]
-		nei = [2, -1, 4, -1]
+		nei = [1, -1, 3, -1]
 		obj = "apple"
 		act = "consume"
 		self.rooms.append(Room(2, self.roomNames[2], desc, nei, obj, act))
@@ -37,7 +37,7 @@ class World:
 		desc = ["This area has a bed, desk and a dresser.",
 				"You have arrived in the bedroom. You can rest here.",
 				"You see a wooden cot and a mattress on top of it."]
-		nei = [1, 3, -1, -1]
+		nei = [0, 2, -1, -1]
 		obj = "bed"
 		act = "sleep"
 		self.rooms.append(Room(3, self.roomNames[3], desc, nei, obj, act))
@@ -72,7 +72,7 @@ class World:
 			return 'Wrong Action'
 
 	def desc(self):
-		ind = randint(0,3)
+		ind = randint(0,2)
 		return self.rooms[self.currRoom].desc[ind]
 
 world = World()
