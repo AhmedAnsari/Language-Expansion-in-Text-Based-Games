@@ -4,10 +4,10 @@ require 'utils'
 
 
 
-local port = 4000 + tonumber(arg[1])%4
-print(port)
-client_connect(port)
-login('root', 'root')
+-- local port = 4000 + tonumber(arg[1])%4
+-- print(port)
+-- client_connect(port)
+-- login('root', 'root')
 
 counter = tonumber(arg[1])%4
 if arg[1]=='1' then

@@ -81,6 +81,13 @@ function interact(counter)
 	socket = ctx:socket(zmq.REP)
 	socket:bind('tcp://127.0.0.1:1234' .. tostring(counter))
 	print("binding succesfully")
+
+	ctxGame = zmq.init(5)
+	socketGame = ctxGame:socket(zmq.REP)
+	socketGame:bind('tcp://127.0.0.1:5678' .. tostring(counter))
+	gen = socketGame:recv()
+	print(gen)
+
 	available_objects = torch.Tensor(getObjectsnumber())
 	for i = 1, getObjectsnumber()
 	do
@@ -122,10 +129,13 @@ end
 
 function random_teleport()
 	local room_index = torch.random(1, NUM_ROOMS)
-	data_out('@tel tut#0'..room_index)
+	-- data_out('@tel tut#0'..room_index)
+	socketGame:send("tel "..(room_index - 1))
 	sleep(0.1)
-	data_in()
-	data_out('l')
+	-- data_in()
+	socketGame:recv()
+	-- data_out('l')
+	socketGame:send("look")
 	if DEBUG then
 		print('Start Room : ' .. room_index ..' ' .. rooms[room_index])
 	end
@@ -156,10 +166,11 @@ end
 
 function login(user, password)
 	local num_rooms = 4
-	local pre_login_text = data_in()
-	print(pre_login_text)
+	-- local pre_login_text = data_in()
+	-- print("pre_login_text: ")
+	-- print(pre_login_text)
 	sleep(1)
-	data_out('connect ' .. user .. ' ' .. password)
+	-- data_out('connect ' .. user .. ' ' .. password)
 end
 
 --Function to parse the output of the game (to extract rewards, etc. )
@@ -168,17 +179,30 @@ function parse_game_output(text)
 	-- text is a list of sentences
 	local reward = nil
 	local text_to_agent = {current_room_description, get_quest_text(quest_checklist[1])}
-	for i=1, #text do
-		if i < #text  and string.match(text[i], '<EOM>') then
-			text_to_agent = {current_room_description, get_quest_text(quest_checklist[1])}
-		elseif string.match(text[i], "REWARD") then
-			if string.match(text[i], quest_actions[quest_checklist[1]]) then
-				reward = tonumber(string.match(text[i], "%d+"))
+	local sep = "\n"
+	for str in string.gmatch(text, "([^"..sep.."]+)") do
+		
+		if string.match(str, "REWARD") then
+			if string.match(str, quest_actions[quest_checklist[1]]) then
+				reward = tonumber(string.match(str, "%d+"))
 			end
-		elseif string.match(text[i], 'not available') or string.match(text[i], 'not find') then
+		elseif string.match(str, 'not available') or string.match(str, 'not find') then
 				reward = JUNK_CMD_REWARD
+		else
+			text_to_agent = {current_room_description, get_quest_text(quest_checklist[1])}
 		end
 	end
+	-- for i=1, #text do
+	-- 	if i < #text  and string.match(text[i], '<EOM>') then
+	-- 		text_to_agent = {current_room_description, get_quest_text(quest_checklist[1])}
+	-- 	elseif string.match(text[i], "REWARD") then
+	-- 		if string.match(text[i], quest_actions[quest_checklist[1]]) then
+	-- 			reward = tonumber(string.match(text[i], "%d+"))
+	-- 		end
+	-- 	elseif string.match(text[i], 'not available') or string.match(text[i], 'not find') then
+	-- 			reward = JUNK_CMD_REWARD
+	-- 	end
+	-- end
 	if not reward then
 		reward = DEFAULT_REWARD
 	end
@@ -190,7 +214,8 @@ end
 --take a step in the game
 function step_game(action_index, object_index, gameLogger)
 	local command = build_command(actions[action_index], objects[object_index], gameLogger)
-	data_out(command)
+	-- data_out(command)
+	socketGame:send(command)
 	if DEBUG then
 		print(actions[action_index] .. ' ' .. objects[object_index])
 	end
@@ -437,21 +462,38 @@ else
 end
 -------------------------------------------------------------------
 
+function mysplit(inputstr, sep)
+    if sep == nil then
+        sep = "%s"
+    end
+    local t={} ; i=1
+    for str in string.gmatch(inputstr, "([^"..sep.."]+)") do
+        t[i] = str
+        i = i + 1
+    end
+    return t
+end
+
+
 function getState(logger, print_on)
 	local terminal = (STEP_COUNT >= MAX_STEPS)
-	local inData = data_in()
-	while #inData == 0 or not string.match(inData[#inData],'<EOM>') do
-		TableConcat(inData, data_in())
-	end
+	-- local inData = data_in()
+	local response1 = socketGame:recv()
+	local inData = mysplit(response1, "\n")
+	-- while #response == 0 or not string.match(inData[#inData],'<EOM>') do
+	-- 	TableConcat(inData, data_in())
+	-- end
 
-	data_out('look')
-	local inData2 = data_in()
-	while #inData2 == 0 or not string.match(inData2[#inData2],'<EOM>') do
-		TableConcat(inData2, data_in())
-	end
+	-- data_out('look')
+	socketGame:send("look")
+	local response2 = socketGame:recv()
+	local inData2 = mysplit(response2, "\n")
+	-- while #inData2 == 0 or not string.match(inData2[#inData2],'<EOM>') do
+	-- 	TableConcat(inData2, data_in())
+	-- end
 	current_room_description = inData2[1]
 
-	local text, reward = parse_game_output(inData)
+	local text, reward = parse_game_output(response1)
 	if DEBUG or print_on then
 		print(text, reward)
 		sleep(0.1)

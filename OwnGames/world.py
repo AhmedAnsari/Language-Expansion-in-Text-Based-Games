@@ -54,31 +54,31 @@ class World:
 			elif obj == 'south':
 				ind = 3
 			else:
-				return 'Wrong direction.'
+				return 'not available'
 
 			nextRoom = self.rooms[self.currRoom].neighbors[ind]
 			if nextRoom == -1:
-				return "Wrong Command. Can't move."
+				return "not available"
 			else:
 				self.currRoom = nextRoom
-			return "In " + self.rooms[self.currRoom].name
+			return self.desc()
 
 		elif act == self.rooms[self.currRoom].act:
 			if obj == self.rooms[self.currRoom].obj:
-				return '[Reward 1].'
+				return act + '\nReward 1.'
 			else:
-				return 'Wrong Object'
+				return 'not available'
 		else:
-			return 'Wrong Action'
+			return 'not available'
 
 	def desc(self):
 		ind = randint(0,2)
 		return self.rooms[self.currRoom].desc[ind]
 
-world = World()
+# world = World()
 
-while True:
-	act = raw_input("Action: ")
-	obj = raw_input("Object: ")
-	print(world.move(act, obj))
-	print(world.desc())
+# while True:
+# 	act = raw_input("Action: ")
+# 	obj = raw_input("Object: ")
+# 	print(world.move(act, obj))
+# 	print(world.desc())
