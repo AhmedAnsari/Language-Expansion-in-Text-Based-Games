@@ -180,6 +180,7 @@ function parse_game_output(text)
 	local reward = nil
 	local text_to_agent = {current_room_description, get_quest_text(quest_checklist[1])}
 	local sep = "\n"
+	print(text)
 	for str in string.gmatch(text, "([^"..sep.."]+)") do
 		
 		if string.match(str, "REWARD") then
@@ -479,6 +480,7 @@ function getState(logger, print_on)
 	local terminal = (STEP_COUNT >= MAX_STEPS)
 	-- local inData = data_in()
 	local response1 = socketGame:recv()
+	print(response1)
 	local inData = mysplit(response1, "\n")
 	-- while #response == 0 or not string.match(inData[#inData],'<EOM>') do
 	-- 	TableConcat(inData, data_in())

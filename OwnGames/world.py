@@ -63,9 +63,9 @@ class World:
 				self.currRoom = nextRoom
 			return self.desc()
 
-		elif act == self.rooms[self.currRoom].act:
-			if obj == self.rooms[self.currRoom].obj:
-				return act + '\nReward 1.'
+		elif act == self.rooms[self.currRoom].action:
+			if obj == self.rooms[self.currRoom].object:
+				return act + '\nREWARD_' + self.rooms[self.currRoom].action + ' 1.'
 			else:
 				return 'not available'
 		else:

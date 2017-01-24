@@ -26,5 +26,5 @@ while True:
 		ans = "Teleported to " + inpSplit[1]
 		socket.send(ans)
 	else:
-		world.move(inpSplit[0], inpSplit[1])
-		socket.send("Command executed.")
+		ans = world.move(inpSplit[0], inpSplit[1])
+		socket.send(ans)
