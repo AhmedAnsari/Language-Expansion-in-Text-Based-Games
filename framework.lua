@@ -233,7 +233,7 @@ function newGame(gameLogger)
 	STEP_COUNT = 0
 	random_teleport()
 	random_quest()
-
+	print(quest_checklist[1])
 	if gameLogger then
 	end
 

@@ -65,7 +65,16 @@ class World:
 
 		elif act == self.rooms[self.currRoom].action:
 			if obj == self.rooms[self.currRoom].object:
-				return act + '\nREWARD_' + self.rooms[self.currRoom].action + ' 1.'
+				ans = ""
+				if obj == "bed":
+					ans = "You slept on bed."
+				elif obj == "apple":
+					ans = "You consumed apple."
+				elif obj == "tv":
+					ans = "You watched tv."
+				else:
+					ans = "You exercised with bike."
+				return ans + '\nREWARD_' + self.rooms[self.currRoom].action + ' 1.'
 			else:
 				return 'not available'
 		else:
