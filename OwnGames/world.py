@@ -31,7 +31,7 @@ class World:
 				"This living area has pizza, coke, and icecream."]
 		nei = [1, -1, 3, -1]
 		obj = "apple"
-		act = "consume"
+		act = "eat"
 		self.rooms.append(Room(2, self.roomNames[2], desc, nei, obj, act))
 
 		desc = ["This area has a bed, desk and a dresser.",
